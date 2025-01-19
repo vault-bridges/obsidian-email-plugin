@@ -4,15 +4,21 @@
 		"baseUrl": ".",
 		"esModuleInterop": true,
 		"importHelpers": true,
-		"inlineSources": true,
 		"isolatedModules": true,
-		"module": "ESNext",
-		"moduleResolution": "node",
+		"lib": ["DOM", "ESNext"],
+		"module": "NodeNext",
+		"moduleDetection": "force",
 		"noEmit": true,
+		"noFallthroughCasesInSwitch": true,
 		"noImplicitAny": true,
+		"noImplicitOverride": true,
+		"noUncheckedIndexedAccess": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"strict": true,
 		"strictNullChecks": true,
 		"target": "ES6",
-		"lib": ["DOM", "ES5", "ES6", "ES7"]
+		"verbatimModuleSyntax": true
 	},
 	"include": ["**/*.ts"]
 }
