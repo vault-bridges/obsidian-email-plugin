@@ -7,7 +7,7 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"ignore": []
+		"ignore": ["main.js"]
 	},
 	"formatter": {
 		"enabled": true,
@@ -58,7 +58,8 @@
 				"noInferrableTypes": "error",
 				"noNamespace": "error",
 				"noNonNullAssertion": "warn",
-				"useAsConstAssertion": "error"
+				"useAsConstAssertion": "error",
+				"useFilenamingConvention": "error"
 			},
 			"suspicious": {
 				"noAsyncPromiseExecutor": "error",
@@ -90,10 +91,7 @@
 				"useValidTypeof": "error"
 			}
 		},
-		"ignore": [
-			"**/node_modules/",
-			"**/main.js"
-		]
+		"ignore": ["**/node_modules/", "**/main.js"]
 	},
 	"javascript": {
 		"formatter": {
@@ -104,12 +102,7 @@
 	},
 	"overrides": [
 		{
-			"include": [
-				"*.ts",
-				"*.tsx",
-				"*.mts",
-				"*.cts"
-			],
+			"include": ["*.ts", "*.tsx", "*.mts", "*.cts"],
 			"linter": {
 				"rules": {
 					"correctness": {
@@ -142,12 +135,7 @@
 			}
 		},
 		{
-			"include": [
-				"*.ts",
-				"*.tsx",
-				"*.mts",
-				"*.cts"
-			],
+			"include": ["*.ts", "*.tsx", "*.mts", "*.cts"],
 			"linter": {
 				"rules": {
 					"correctness": {
