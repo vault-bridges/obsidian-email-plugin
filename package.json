@@ -3,6 +3,7 @@
 	"version": "1.0.0",
 	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
+	"type": "module",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
@@ -13,11 +14,20 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
+		"@types/bun": "^1.1.17",
+		"@types/mailparser": "^3.4.5",
 		"@types/node": "^22.10.7",
+		"@types/smtp-server": "^3.5.10",
 		"builtin-modules": "4.0.0",
 		"esbuild": "0.24.2",
 		"obsidian": "latest",
 		"tslib": "^2.8.1",
 		"typescript": "5.7.3"
+	},
+	"dependencies": {
+		"es-toolkit": "^1.31.0",
+		"mailauth": "^4.8.2",
+		"mailparser": "^3.7.2",
+		"smtp-server": "^3.13.6"
 	}
 }
