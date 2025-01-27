@@ -1,11 +1,11 @@
-import { Database } from 'bun:sqlite'
+import { DatabaseSync } from 'node:sqlite'
 import type { Attachment, ParsedMail } from 'mailparser'
 
 export class EmailDatabase {
-	private db: Database
+	private db: DatabaseSync
 
 	constructor(dbPath: string) {
-		this.db = new Database(dbPath, { create: true })
+		this.db = new DatabaseSync(dbPath, { open: true })
 		this.initializeSchema()
 	}
 
@@ -23,7 +23,8 @@ export class EmailDatabase {
 
 		const { messageId, subject, from, to, date, html, text, attachments } = email
 
-		this.db.run(query, [
+		const insert = this.db.prepare(query)
+		insert.run(
 			messageId || null,
 			subject || null,
 			from?.text || null,
@@ -31,7 +32,7 @@ export class EmailDatabase {
 			date instanceof Date ? date.toISOString() : null,
 			html || null,
 			text || null,
-		])
+		)
 
 		// Save attachments (if any)
 		if (attachments && attachments.length > 0) {
@@ -47,7 +48,8 @@ export class EmailDatabase {
 			VALUES (?, ?, ?, ?)
 		`
 
-		this.db.run(attachQuery, [
+		const insert = this.db.prepare(attachQuery)
+		insert.run(
 			messageId,
 			attachment.filename || null,
 			attachment.contentType || null,
@@ -55,7 +57,7 @@ export class EmailDatabase {
 			attachment.content instanceof Buffer
 				? attachment.content
 				: Buffer.from(attachment.content as Uint8Array),
-		])
+		)
 	}
 
 	// async getEmailsForPlugin(pluginId: string): Promise<EmailMessage[]> {
@@ -63,7 +65,7 @@ export class EmailDatabase {
 	// }
 
 	initializeSchema() {
-		this.db.run(`
+		this.db.exec(`
 			CREATE TABLE IF NOT EXISTS emails (
 				id INTEGER PRIMARY KEY,
 				messageId TEXT UNIQUE,
@@ -76,7 +78,7 @@ export class EmailDatabase {
 			)
 		`)
 
-		this.db.run(`
+		this.db.exec(`
 			CREATE TABLE IF NOT EXISTS attachments (
 				id INTEGER PRIMARY KEY,
 				emailMessageId TEXT,

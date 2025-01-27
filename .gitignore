@@ -11,3 +11,7 @@ main.js
 # obsidian
 data.json
 .env
+
+# obsidian-email-plugin
+emails.db
+ecosystem.config.cjs

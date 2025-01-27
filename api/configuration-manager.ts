@@ -5,6 +5,8 @@ interface ServiceConfiguration {
 		host: string
 		port: number
 		secure: boolean
+		key: string
+		cert: string
 	}
 	database: {
 		path: string
@@ -32,6 +34,8 @@ export class ConfigurationManager {
 				host: process.env.SMTP_HOST || 'localhost',
 				port: Number.parseInt(process.env.SMTP_PORT || '25'),
 				secure: process.env.SMTP_SECURE === 'true',
+				key: process.env.SMTP_KEY || 'key.pem',
+				cert: process.env.SMTP_CERT || 'cert.pem',
 			},
 			database: {
 				path: process.env.DB_PATH || './emails.db',

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { authenticate } from 'mailauth'
 import { simpleParser } from 'mailparser'
 import { SMTPServer, type SMTPServerDataStream, type SMTPServerSession } from 'smtp-server'
@@ -38,7 +39,9 @@ export class EmailIngestService {
 		this.smtpServer = new SMTPServer({
 			logger: true,
 			authOptional: true,
-			secure: this.configManager.get('secure'),
+			secure: this.configManager.get('smtp.secure'),
+			key: readFileSync(this.configManager.get('smtp.key')),
+			cert: readFileSync(this.configManager.get('smtp.cert')),
 			onData: this.processIncomingEmail.bind(this),
 		})
 		this.smtpServer.on('error', (error) => {
