@@ -34,7 +34,7 @@ declare module 'mailauth' {
 
 	interface DKIM {
 		headerFrom: string[]
-		envelopeFrom: string
+		envelopeFrom: string | boolean
 		results: DKIMResult[]
 	}
 

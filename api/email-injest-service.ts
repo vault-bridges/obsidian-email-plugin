@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { PassThrough } from 'node:stream'
 import { authenticate } from 'mailauth'
 import { simpleParser } from 'mailparser'
 import { SMTPServer, type SMTPServerDataStream, type SMTPServerSession } from 'smtp-server'
@@ -57,28 +58,38 @@ export class EmailIngestService {
 		session: SMTPServerSession,
 		callback: (error: Error | null) => void,
 	) {
-		const parsed = await simpleParser(stream, {}).catch((error) => {
+		const passStreamParser = new PassThrough()
+		const passStreamAuth = new PassThrough()
+
+		stream.pipe(passStreamParser)
+		stream.pipe(passStreamAuth)
+
+		const parsed = await simpleParser(passStreamParser, {}).catch((error) => {
 			console.log(error)
 		})
 
 		if (!parsed) {
-			callback(new Error('Failed to parse email'))
-			return
+			return callback(new Error('Failed to parse email'))
 		}
 
-		const { spf, dkim } = await authenticate(stream, {
+		const { spf, dkim, dmarc } = await authenticate(passStreamAuth, {
 			ip: session.remoteAddress,
 			helo: session.clientHostname,
-			sender: parsed.from?.text,
+			sender: parsed.from?.value?.at(0)?.address,
 		})
 
 		console.log('SPF Result:', spf)
 		console.log('DKIM Result:', dkim)
+		console.log('DMARC Result:', dmarc)
 
 		// check email status
-		if (spf.status.result !== 'pass' || dkim.results[0]?.status.result !== 'pass') {
-			console.log('SPF or DKIM check failed')
-			// return callback(new Error('SPF or DKIM check failed'))
+		if (
+			spf.status.result !== 'pass' ||
+			dkim.results[0]?.status.result !== 'pass' ||
+			dmarc.status.result !== 'pass'
+		) {
+			console.log('SPF, DKIM or DMARK check failed')
+			return callback(new Error('SPF, DKIM or DMARK check failed'))
 		}
 
 		console.log('Received message:', parsed.text)
