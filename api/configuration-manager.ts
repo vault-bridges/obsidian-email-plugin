@@ -7,6 +7,7 @@ interface ServiceConfiguration {
 		secure: boolean
 		key: string
 		cert: string
+		domain: string
 	}
 	database: {
 		path: string
@@ -36,6 +37,7 @@ export class ConfigurationManager {
 				secure: process.env.SMTP_SECURE === 'true',
 				key: process.env.SMTP_KEY || 'key.pem',
 				cert: process.env.SMTP_CERT || 'cert.pem',
+				domain: process.env.SMTP_DOMAIN || 'localhost',
 			},
 			database: {
 				path: process.env.DB_PATH || './emails.db',

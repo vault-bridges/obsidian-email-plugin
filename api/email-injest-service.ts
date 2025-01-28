@@ -58,44 +58,72 @@ export class EmailIngestService {
 		session: SMTPServerSession,
 		callback: (error: Error | null) => void,
 	) {
+		const domainError = await this.checkDomain(session)
+		if (domainError) return callback(domainError)
+
 		const passStreamParser = new PassThrough()
 		const passStreamAuth = new PassThrough()
 
 		stream.pipe(passStreamParser)
 		stream.pipe(passStreamAuth)
 
-		const parsed = await simpleParser(passStreamParser, {}).catch((error) => {
-			console.log(error)
-		})
+		const authError = await this.authenticateEmail(passStreamAuth, session)
+		if (authError) return callback(authError)
 
-		if (!parsed) {
-			return callback(new Error('Failed to parse email'))
-		}
-
-		const { spf, dkim, dmarc } = await authenticate(passStreamAuth, {
-			ip: session.remoteAddress,
-			helo: session.clientHostname,
-			sender: parsed.from?.value?.at(0)?.address,
-		})
-
-		console.log('SPF Result:', spf)
-		console.log('DKIM Result:', dkim)
-		console.log('DMARC Result:', dmarc)
-
-		// check email status
-		if (
-			spf.status.result !== 'pass' ||
-			dkim.results[0]?.status.result !== 'pass' ||
-			dmarc.status.result !== 'pass'
-		) {
-			console.log('SPF, DKIM or DMARK check failed')
-			return callback(new Error('SPF, DKIM or DMARK check failed'))
-		}
-
-		console.log('Received message:', parsed.text)
+		const parsed = await this.parseEmail(passStreamParser)
+		if (!parsed) return callback(new Error('Failed to parse email'))
 
 		await this.database.saveEmail(parsed)
 		callback(null)
+	}
+
+	private async checkDomain(session: SMTPServerSession) {
+		const recipientDomain = session.envelope.rcptTo[0]?.address.split('@')[1]
+		if (!recipientDomain) {
+			console.log('No recipient domain found')
+			return new Error('No recipient domain found')
+		}
+
+		if (recipientDomain !== this.configManager.get('smtp.domain')) {
+			console.log(`Emails to domain ${recipientDomain} are not allowed`)
+			return new Error(`Emails to domain ${recipientDomain} are not allowed`)
+		}
+	}
+
+	private async authenticateEmail(stream: PassThrough, session: SMTPServerSession) {
+		if (!session.envelope.mailFrom) {
+			return new Error('No sender address found in envelope')
+		}
+
+		const { spf, dkim, dmarc } = await authenticate(stream, {
+			ip: session.remoteAddress,
+			helo: session.clientHostname,
+			sender: session.envelope.mailFrom.address,
+		})
+
+		if (spf.status.result !== 'pass') {
+			console.log('SPF check failed', spf)
+			return new Error(`SPF check failed, ${spf.status.result}`)
+		}
+
+		if (dkim.results[0]?.status.result !== 'pass') {
+			console.log('DKIM check failed', dkim)
+			return new Error(`DKIM check failed, ${dkim.results[0]?.status.result}`)
+		}
+
+		if (dmarc.status.result !== 'pass') {
+			console.log('DMARC check failed', dmarc)
+			return new Error(`DMARC check failed, ${dmarc.status.result}`)
+		}
+	}
+
+	private async parseEmail(stream: PassThrough) {
+		try {
+			return await simpleParser(stream, {})
+		} catch (error) {
+			console.error('Email parsing error:', error)
+			return null
+		}
 	}
 }
 
