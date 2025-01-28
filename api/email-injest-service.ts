@@ -71,28 +71,28 @@ export class EmailIngestService {
 		if (authError) return callback(authError)
 
 		const parsed = await this.parseEmail(passStreamParser)
-		if (!parsed) return callback(new Error('Failed to parse email'))
+		if (parsed instanceof Error) return callback(parsed)
 
 		await this.database.saveEmail(parsed)
 		callback(null)
 	}
 
 	private async checkDomain(session: SMTPServerSession) {
+		const allowedDomain = this.configManager.get('smtp.domain')
 		const recipientDomain = session.envelope.rcptTo[0]?.address.split('@')[1]
+
 		if (!recipientDomain) {
-			console.log('No recipient domain found')
-			return new Error('No recipient domain found')
+			return this.logAndReturnError('No recipient domain found')
 		}
 
-		if (recipientDomain !== this.configManager.get('smtp.domain')) {
-			console.log(`Emails to domain ${recipientDomain} are not allowed`)
-			return new Error(`Emails to domain ${recipientDomain} are not allowed`)
+		if (recipientDomain !== allowedDomain) {
+			return this.logAndReturnError(`Emails to domain ${recipientDomain} are not allowed`)
 		}
 	}
 
 	private async authenticateEmail(stream: PassThrough, session: SMTPServerSession) {
 		if (!session.envelope.mailFrom) {
-			return new Error('No sender address found in envelope')
+			return this.logAndReturnError('No sender address found in envelope')
 		}
 
 		const { spf, dkim, dmarc } = await authenticate(stream, {
@@ -102,18 +102,15 @@ export class EmailIngestService {
 		})
 
 		if (spf.status.result !== 'pass') {
-			console.log('SPF check failed', spf)
-			return new Error(`SPF check failed, ${spf.status.result}`)
+			return this.logAndReturnError(`SPF check failed, ${spf.status.result}`)
 		}
 
 		if (dkim.results[0]?.status.result !== 'pass') {
-			console.log('DKIM check failed', dkim)
-			return new Error(`DKIM check failed, ${dkim.results[0]?.status.result}`)
+			return this.logAndReturnError(`DKIM check failed, ${dkim.results[0]?.status.result}`)
 		}
 
 		if (dmarc.status.result !== 'pass') {
-			console.log('DMARC check failed', dmarc)
-			return new Error(`DMARC check failed, ${dmarc.status.result}`)
+			return this.logAndReturnError(`DMARC check failed, ${dmarc.status.result}`)
 		}
 	}
 
@@ -121,9 +118,17 @@ export class EmailIngestService {
 		try {
 			return await simpleParser(stream, {})
 		} catch (error) {
-			console.error('Email parsing error:', error)
-			return null
+			if (error instanceof Error) {
+				console.error(`Failed to parse email, ${error.message}, ${error.stack}`)
+				return error
+			}
+			return this.logAndReturnError(`Failed to parse email, ${error}`)
 		}
+	}
+
+	private logAndReturnError(message: string): Error {
+		console.error(message)
+		return new Error(message)
 	}
 }
 
