@@ -1,5 +1,7 @@
 FROM node:23.6.0-slim
 
+VOLUME /app/certs
+
 ARG SMTP_KEY=/app/certs/privkey.pem
 ARG SMTP_CERT=/app/certs/fullchain.pem
 ARG SMTP_SECURE=false
