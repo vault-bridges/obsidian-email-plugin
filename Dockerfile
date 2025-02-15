@@ -1,6 +1,7 @@
 FROM node:23.6.0-slim
 
 VOLUME /app/certs
+VOLUME /app/db
 
 WORKDIR /app
 
@@ -8,7 +9,6 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN mkdir -p /app/certs
 
 EXPOSE 25
 
