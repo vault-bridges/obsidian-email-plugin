@@ -91,6 +91,7 @@ export class EmailIngestService {
 	}
 
 	private async authenticateEmail(stream: PassThrough, session: SMTPServerSession) {
+		console.log('session', JSON.stringify(session, null, 2))
 		if (!session.envelope.mailFrom) {
 			return this.logAndReturnError('No sender address found in envelope')
 		}
