@@ -10,42 +10,35 @@ export class EmailDatabase {
 	}
 
 	async saveEmail(email: ParsedMail): Promise<void> {
-		try {
-			const query = `
-				INSERT INTO emails (messageId,
-									subject,
-									fromAddress,
-									toAddress,
-									date,
-									htmlContent,
-									textContent)
-				VALUES (?, ?, ?, ?, ?, ?, ?)
-			`
+		const query = `
+			INSERT INTO emails (messageId,
+								subject,
+								fromAddress,
+								toAddress,
+								date,
+								htmlContent,
+								textContent)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		`
 
-			const { messageId, subject, from, to, date, html, text, attachments } = email
+		const { messageId, subject, from, to, date, html, text, attachments } = email
 
-			const insert = this.db.prepare(query)
-			insert.run(
-				messageId || null,
-				subject || null,
-				from?.text || null,
-				Array.isArray(to) ? to.map((t) => t.text).join(', ') || null : to?.text || null,
-				date instanceof Date ? date.toISOString() : null,
-				html || null,
-				text || null,
-			)
+		const insert = this.db.prepare(query)
+		insert.run(
+			messageId || null,
+			subject || null,
+			from?.text || null,
+			Array.isArray(to) ? to.map((t) => t.text).join(', ') || null : to?.text || null,
+			date instanceof Date ? date.toISOString() : null,
+			html || null,
+			text || null,
+		)
 
-			// Save attachments (if any)
-			if (attachments && attachments.length > 0) {
-				for (const attachment of attachments) {
-					await this.saveAttachment(messageId as string, attachment)
-				}
+		// Save attachments (if any)
+		if (attachments && attachments.length > 0) {
+			for (const attachment of attachments) {
+				await this.saveAttachment(messageId as string, attachment)
 			}
-
-			console.log('Email saved successfully')
-		} catch (error) {
-			console.error('Error saving email:', error)
-			throw error
 		}
 	}
 
