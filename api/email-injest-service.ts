@@ -40,7 +40,9 @@ export class EmailIngestService {
 		this.smtpServer = new SMTPServer({
 			logger: true,
 			authOptional: true,
-			secure: false,
+			secure: this.configManager.get('smtp.secure'),
+			key: readFileSync(this.configManager.get('smtp.key')),
+			cert: readFileSync(this.configManager.get('smtp.cert')),
 			onData: this.processIncomingEmail.bind(this),
 		})
 		this.smtpServer.on('error', (error) => {
