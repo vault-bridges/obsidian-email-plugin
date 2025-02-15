@@ -40,9 +40,7 @@ export class EmailIngestService {
 		this.smtpServer = new SMTPServer({
 			logger: true,
 			authOptional: true,
-			// useProxy: true,
-			useXClient: true,
-			useXForward: true,
+			useProxy: true,
 			secure: this.configManager.get('smtp.secure'),
 			key: readFileSync(this.configManager.get('smtp.key')),
 			cert: readFileSync(this.configManager.get('smtp.cert')),
