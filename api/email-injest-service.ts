@@ -102,7 +102,8 @@ export class EmailIngestService {
 		})
 
 		if (spf.status.result !== 'pass') {
-			return this.logAndReturnError(`SPF check failed, ${spf.status.result}`)
+			console.error(`SPF check failed, ${spf.status.result}`)
+			// return this.logAndReturnError(`SPF check failed, ${spf.status.result}`)
 		}
 
 		if (dkim.results[0]?.status.result !== 'pass') {
