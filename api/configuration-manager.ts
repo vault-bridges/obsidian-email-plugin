@@ -5,6 +5,7 @@ interface ServiceConfiguration {
 		host: string
 		port: number
 		secure: boolean
+		proxy: boolean
 		key: string
 		cert: string
 		domain: string
@@ -35,6 +36,7 @@ export class ConfigurationManager {
 				host: process.env.SMTP_HOST || 'localhost',
 				port: Number.parseInt(process.env.SMTP_PORT || '25'),
 				secure: process.env.SMTP_SECURE === 'true',
+				proxy: process.env.SMTP_PROXY === 'true',
 				key: process.env.SMTP_KEY || 'key.pem',
 				cert: process.env.SMTP_CERT || 'cert.pem',
 				domain: process.env.SMTP_DOMAIN || 'localhost',
