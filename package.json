@@ -25,7 +25,10 @@
 		"typescript": "5.7.3"
 	},
 	"dependencies": {
+		"@hono/node-server": "^1.13.8",
+		"@hono/valibot-validator": "^0.5.2",
 		"es-toolkit": "^1.31.0",
+		"hono": "^4.7.1",
 		"mailauth": "^4.8.2",
 		"mailparser": "^3.7.2",
 		"smtp-server": "^3.13.6"

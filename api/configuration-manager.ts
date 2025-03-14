@@ -1,6 +1,10 @@
 import { get } from 'es-toolkit/compat'
+import process from 'process'
 
 interface ServiceConfiguration {
+	api: {
+		port: number
+	}
 	smtp: {
 		host: string
 		port: number
@@ -32,6 +36,9 @@ export class ConfigurationManager {
 
 	private loadConfiguration() {
 		this.config = {
+			api: {
+				port: Number.parseInt(process.env.API_PORT || '80'),
+			},
 			smtp: {
 				host: process.env.SMTP_HOST || 'localhost',
 				port: Number.parseInt(process.env.SMTP_PORT || '25'),

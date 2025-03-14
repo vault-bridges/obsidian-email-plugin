@@ -1,3 +1,4 @@
+import { serve } from '@hono/node-server'
 import { readFileSync } from 'node:fs'
 import { PassThrough } from 'node:stream'
 import { authenticate } from 'mailauth'
@@ -5,18 +6,20 @@ import { simpleParser } from 'mailparser'
 import { SMTPServer, type SMTPServerDataStream, type SMTPServerSession } from 'smtp-server'
 import { ConfigurationManager } from './configuration-manager.ts'
 import { EmailDatabase } from './email-database.ts'
+import { PluginAPIService } from './plugin-api-service.ts'
+import { PluginRegistry } from './plugin-registry.ts'
 
 export class EmailIngestService {
 	private smtpServer!: SMTPServer
-	// private apiService: PluginAPIService
+	private apiService!: PluginAPIService
 	private database: EmailDatabase
-	// private pluginRegistry: PluginRegistry
+	private pluginRegistry: PluginRegistry
 	private configManager: ConfigurationManager
 
 	constructor() {
 		this.configManager = new ConfigurationManager()
 		this.database = new EmailDatabase(this.configManager.get('database.path'))
-		// this.pluginRegistry = new PluginRegistry()
+		this.pluginRegistry = new PluginRegistry()
 
 		this.initializeServices()
 	}
@@ -25,14 +28,11 @@ export class EmailIngestService {
 		// Start SMTP server
 		this.smtpServer.listen(this.configManager.get('smtp.port'), this.configManager.get('smtp.host'))
 
-		/*		// Start API service
-		const app = new Hono()
-		app.route('/api', this.apiService.routes)
-
-		Bun.serve({
-			port: 3000,
-			fetch: app.fetch,
-		})*/
+		// Start API service
+		const app = this.apiService.initializeRoutes()
+		serve({ fetch: app.fetch, port: this.configManager.get('api.port') }, (info) => {
+			console.log(`Listening on ${info.address}:${info.port}`)
+		})
 	}
 
 	private initializeServices() {
@@ -51,7 +51,7 @@ export class EmailIngestService {
 		})
 
 		// Initialize API service
-		// this.apiService = new PluginAPIService(this.pluginRegistry, this.database)
+		this.apiService = new PluginAPIService(this.pluginRegistry, this.database)
 	}
 
 	private async processIncomingEmail(
@@ -75,6 +75,7 @@ export class EmailIngestService {
 		if (parsed instanceof Error) return callback(parsed)
 
 		await this.database.saveEmail(parsed)
+		this.pluginRegistry.notifyPlugins(parsed)
 		callback(null)
 	}
 

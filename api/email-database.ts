@@ -1,6 +1,21 @@
 import { DatabaseSync } from 'node:sqlite'
 import type { Attachment, ParsedMail } from 'mailparser'
 
+export interface EmailMessage {
+	id: string
+	pluginId: string
+	from: string
+	to: string
+	subject: string
+	body: string
+	attachments?: Attachment[]
+	metadata: {
+		receivedAt: Date
+		processed: boolean
+		tags?: string[]
+	}
+}
+
 export class EmailDatabase {
 	private db: DatabaseSync
 
@@ -88,5 +103,9 @@ export class EmailDatabase {
 				FOREIGN KEY (emailMessageId) REFERENCES emails(messageId)
 			)
 		`)
+	}
+
+	async getEmailsForPlugin(pluginId: string): Promise<EmailMessage[]> {
+		// Retrieve emails matching plugin criteria
 	}
 }
