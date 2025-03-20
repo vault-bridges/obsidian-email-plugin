@@ -27,6 +27,7 @@
 	"dependencies": {
 		"@hono/node-server": "^1.13.8",
 		"@hono/valibot-validator": "^0.5.2",
+		"@libsql/client": "^0.15.0",
 		"drizzle-orm": "^0.40.1",
 		"es-toolkit": "^1.31.0",
 		"hono": "^4.7.1",
