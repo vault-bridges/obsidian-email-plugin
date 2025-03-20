@@ -3,7 +3,7 @@ FROM node:22.14.0-slim
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY package*.json ./
+COPY package*.json .npmrc ./
 RUN npm ci --omit=dev
 
 COPY . .

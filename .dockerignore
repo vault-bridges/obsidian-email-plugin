@@ -1,5 +1,6 @@
 /**
 !/api
+!/.npmrc
 !/package*.json
 !/tsconfig.json
 !/types.d.ts

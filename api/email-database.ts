@@ -11,7 +11,7 @@ export class EmailDatabase {
 	private db: ReturnType<typeof drizzle<typeof schema>>
 
 	constructor(dbPath: string) {
-		this.db = drizzle({ connection: `file:${dbPath}` })
+		this.db = drizzle({ connection: `file:${dbPath}`, schema })
 	}
 
 	async saveEmail(email: ParsedMail): Promise<EmailMessage> {
