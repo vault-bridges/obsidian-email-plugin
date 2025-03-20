@@ -1,6 +1,6 @@
-import Database from 'better-sqlite3'
+import Database from 'libsql'
 import { eq } from 'drizzle-orm'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { drizzle } from 'drizzle-orm/libsql'
 import type { ParsedMail } from 'mailparser'
 import * as schema from '../db/schema.ts'
 
@@ -64,7 +64,7 @@ export class EmailDatabase {
 	async getEmailsForPlugin(pluginId: string) {
 		// Retrieve emails matching plugin criteria
 		// This is a placeholder implementation
-		const result = this.db.select().from(schema.emails).all()
+		const result = await this.db.select().from(schema.emails).all()
 
 		// Convert to EmailMessage format
 		return result.map((email) => ({
