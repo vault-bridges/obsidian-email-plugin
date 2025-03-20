@@ -74,8 +74,8 @@ export class EmailIngestService {
 		const parsed = await this.parseEmail(passStreamParser)
 		if (parsed instanceof Error) return callback(parsed)
 
-		await this.database.saveEmail(parsed)
-		this.pluginRegistry.notifyPlugins(parsed)
+		const email = await this.database.saveEmail(parsed)
+		await this.pluginRegistry.notifyPlugins(email)
 		callback(null)
 	}
 

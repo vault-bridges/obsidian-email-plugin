@@ -1,13 +1,13 @@
 import type { EmailMessage } from './email-database.js'
 import type { PluginRegistration } from './plugin-api-service.js'
-import { WebhookClient } from './webhook-client.ts'
+// import { WebhookClient } from './webhook-client.ts'
 
 export class PluginRegistry {
 	private plugins: Map<string, PluginRegistration> = new Map()
-	private webhookClient: WebhookClient
+	// private webhookClient: WebhookClient
 
 	constructor() {
-		this.webhookClient = new WebhookClient()
+		// this.webhookClient = new WebhookClient()
 	}
 
 	registerPlugin(plugin: PluginRegistration) {
@@ -27,21 +27,21 @@ export class PluginRegistry {
 
 		// From email matching
 		if (rules.fromEmail?.length) {
-			if (!rules.fromEmail.some((email) => email === emailMessage.from)) {
+			if (!rules.fromEmail.some((email) => email === emailMessage.fromAddress)) {
 				return false
 			}
 		}
 
 		// Subject matching
 		if (rules.subjectContains?.length) {
-			if (!rules.subjectContains.some((term) => emailMessage.subject.includes(term))) {
+			if (!rules.subjectContains.some((term) => emailMessage.subject?.includes(term))) {
 				return false
 			}
 		}
 
 		// Body matching
 		if (rules.bodyContains?.length) {
-			if (!rules.bodyContains.some((term) => emailMessage.body.includes(term))) {
+			if (!rules.bodyContains.some((term) => emailMessage.textContent?.includes(term))) {
 				return false
 			}
 		}
@@ -54,11 +54,11 @@ export class PluginRegistry {
 
 		for (const plugin of matchingPlugins) {
 			try {
-				await this.webhookClient.send(plugin.webhookUrl, {
-					emailId: email.id,
-					pluginId: plugin.id,
-					emailData: this.sanitizeEmailForWebhook(email),
-				})
+				// await this.webhookClient.send(plugin.webhookUrl, {
+				// 	emailId: email.id,
+				// 	pluginId: plugin.id,
+				// 	emailData: this.sanitizeEmailForWebhook(email),
+				// })
 			} catch (error) {
 				this.logWebhookError(plugin, error)
 			}
@@ -69,12 +69,12 @@ export class PluginRegistry {
 		// Remove sensitive information before sending
 		return {
 			id: email.id,
-			from: email.from,
+			from: email.fromAddress,
 			subject: email.subject,
-			body: this.truncateBody(email.body),
+			body: this.truncateBody(email.textContent || email.htmlContent || ''),
 			attachments: email.attachments?.map((att) => ({
 				filename: att.filename,
-				contentType: att.contentType,
+				contentType: att.mimetype,
 			})),
 		}
 	}

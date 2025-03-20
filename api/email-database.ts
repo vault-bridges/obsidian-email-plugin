@@ -1,111 +1,83 @@
-import { DatabaseSync } from 'node:sqlite'
-import type { Attachment, ParsedMail } from 'mailparser'
+import Database from 'better-sqlite3'
+import { eq } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
+import type { ParsedMail } from 'mailparser'
+import * as schema from '../db/schema.ts'
 
-export interface EmailMessage {
-	id: string
-	pluginId: string
-	from: string
-	to: string
-	subject: string
-	body: string
-	attachments?: Attachment[]
-	metadata: {
-		receivedAt: Date
-		processed: boolean
-		tags?: string[]
-	}
+export type EmailMessage = typeof schema.emails.$inferSelect & {
+	attachments: Array<typeof schema.attachments.$inferSelect>
 }
 
 export class EmailDatabase {
-	private db: DatabaseSync
+	private db: ReturnType<typeof drizzle<typeof schema>>
 
 	constructor(dbPath: string) {
-		this.db = new DatabaseSync(dbPath, { open: true })
-		this.initializeSchema()
+		this.db = drizzle(new Database(dbPath), { schema })
 	}
 
-	async saveEmail(email: ParsedMail): Promise<void> {
-		const query = `
-			INSERT INTO emails (messageId,
-								subject,
-								fromAddress,
-								toAddress,
-								date,
-								htmlContent,
-								textContent)
-			VALUES (?, ?, ?, ?, ?, ?, ?)
-		`
-
+	async saveEmail(email: ParsedMail): Promise<EmailMessage> {
 		const { messageId, subject, from, to, date, html, text, attachments } = email
 
-		const insert = this.db.prepare(query)
-		insert.run(
-			messageId || null,
-			subject || null,
-			from?.text || null,
-			Array.isArray(to) ? to.map((t) => t.text).join(', ') || null : to?.text || null,
-			date instanceof Date ? date.toISOString() : null,
-			html || null,
-			text || null,
-		)
+		return this.db.transaction(async (tx) => {
+			const [emailId] = await tx
+				.insert(schema.emails)
+				.values({
+					messageId: messageId || '',
+					subject: subject || null,
+					fromAddress: from?.text || null,
+					toAddress: Array.isArray(to)
+						? to.map((t) => t.text).join(', ') || null
+						: to?.text || null,
+					date: date || null,
+					htmlContent: html || null,
+					textContent: text || null,
+				})
+				.returning({ id: schema.emails.id })
 
-		// Save attachments (if any)
-		if (attachments && attachments.length > 0) {
-			for (const attachment of attachments) {
-				await this.saveAttachment(messageId as string, attachment)
+			if (attachments && attachments.length > 0) {
+				tx.insert(schema.attachments).values(
+					attachments.map((attachment) => ({
+						emailMessageId: messageId as string,
+						filename: attachment.filename || null,
+						mimetype: attachment.contentType || null,
+						content:
+							attachment.content instanceof Buffer
+								? attachment.content
+								: Buffer.from(attachment.content as Uint8Array),
+					})),
+				)
 			}
-		}
+			if (!emailId) {
+				throw new Error('Failed to save email')
+			}
+			const foundEmail = await this.db.query.emails.findFirst({
+				where: eq(schema.emails.id, emailId.id),
+				with: { attachments: true },
+			})
+			if (!foundEmail) {
+				throw new Error('Failed to find saved email')
+			}
+			return foundEmail
+		})
 	}
 
-	async saveAttachment(messageId: string, attachment: Attachment): Promise<void> {
-		const attachQuery = `
-			INSERT INTO attachments (emailMessageId, filename, mimetype, content)
-			VALUES (?, ?, ?, ?)
-		`
-
-		const insert = this.db.prepare(attachQuery)
-		insert.run(
-			messageId,
-			attachment.filename || null,
-			attachment.contentType || null,
-			// Convert Buffer content to a Blob-safe format if necessary
-			attachment.content instanceof Buffer
-				? attachment.content
-				: Buffer.from(attachment.content as Uint8Array),
-		)
-	}
-
-	// async getEmailsForPlugin(pluginId: string): Promise<EmailMessage[]> {
-	// Retrieve emails matching plugin criteria
-	// }
-
-	initializeSchema() {
-		this.db.exec(`
-			CREATE TABLE IF NOT EXISTS emails (
-				id INTEGER PRIMARY KEY,
-				messageId TEXT UNIQUE,
-				subject TEXT,
-				fromAddress TEXT,
-				toAddress TEXT,
-				date TEXT,
-				htmlContent TEXT,
-				textContent TEXT
-			)
-		`)
-
-		this.db.exec(`
-			CREATE TABLE IF NOT EXISTS attachments (
-				id INTEGER PRIMARY KEY,
-				emailMessageId TEXT,
-				filename TEXT,
-				mimetype TEXT,
-				content BLOB,
-				FOREIGN KEY (emailMessageId) REFERENCES emails(messageId)
-			)
-		`)
-	}
-
-	async getEmailsForPlugin(pluginId: string): Promise<EmailMessage[]> {
+	async getEmailsForPlugin(pluginId: string) {
 		// Retrieve emails matching plugin criteria
+		// This is a placeholder implementation
+		const result = this.db.select().from(schema.emails).all()
+
+		// Convert to EmailMessage format
+		return result.map((email) => ({
+			id: email.messageId,
+			pluginId,
+			from: email.fromAddress || '',
+			to: email.toAddress || '',
+			subject: email.subject || '',
+			body: email.htmlContent || email.textContent || '',
+			metadata: {
+				receivedAt: email.date ? new Date(email.date) : new Date(),
+				processed: true,
+			},
+		}))
 	}
 }

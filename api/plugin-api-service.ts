@@ -19,10 +19,13 @@ const PluginRegistrationSchema = object({
 export type PluginRegistration = InferInput<typeof PluginRegistrationSchema>
 
 export class PluginAPIService {
-	constructor(
-		private pluginRegistry: PluginRegistry,
-		private database: EmailDatabase,
-	) {}
+	private pluginRegistry: PluginRegistry
+	private database: EmailDatabase
+
+	constructor(pluginRegistry: PluginRegistry, database: EmailDatabase) {
+		this.pluginRegistry = pluginRegistry
+		this.database = database
+	}
 
 	initializeRoutes() {
 		const app = new Hono()
@@ -35,11 +38,11 @@ export class PluginAPIService {
 		})
 
 		// Email Retrieval Endpoint
-		app.get('/emails', async (c) => {
-			const pluginId = c.req.query('pluginId')
+		app.get('/emails', async (context) => {
+			const pluginId = context.req.query('pluginId')
 			if (!pluginId) throw new HTTPException(401, { message: 'Missing pluginId' })
 			const emails = await this.database.getEmailsForPlugin(pluginId)
-			return c.json(emails)
+			return context.json(emails)
 		})
 
 		// Long-polling Endpoint
