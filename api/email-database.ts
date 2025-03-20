@@ -1,6 +1,5 @@
-import Database from 'libsql'
 import { eq } from 'drizzle-orm'
-import { drizzle } from 'drizzle-orm/libsql'
+import { drizzle } from 'drizzle-orm/libsql/node'
 import type { ParsedMail } from 'mailparser'
 import * as schema from './schema.ts'
 
@@ -12,7 +11,7 @@ export class EmailDatabase {
 	private db: ReturnType<typeof drizzle<typeof schema>>
 
 	constructor(dbPath: string) {
-		this.db = drizzle(new Database(dbPath), { schema })
+		this.db = drizzle({ connection: `file:${dbPath}` })
 	}
 
 	async saveEmail(email: ParsedMail): Promise<EmailMessage> {
