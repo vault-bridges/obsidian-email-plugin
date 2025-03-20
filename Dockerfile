@@ -1,6 +1,7 @@
-FROM node:23.6.0-slim
+FROM node:22.14.0-slim
 
 WORKDIR /app
+ENV NODE_ENV=production
 
 COPY package*.json ./
 RUN npm ci
