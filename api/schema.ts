@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm'
 import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export const emails = sqliteTable('emails', {
@@ -20,3 +21,14 @@ export const attachments = sqliteTable('attachments', {
 	mimetype: text(),
 	content: blob({ mode: 'buffer' }),
 })
+
+export const emailsRelations = relations(emails, ({ many }) => ({
+	attachments: many(attachments),
+}))
+
+export const attachmentsRelations = relations(attachments, ({ one }) => ({
+	email: one(emails, {
+		fields: [attachments.emailMessageId],
+		references: [emails.messageId],
+	}),
+}))
