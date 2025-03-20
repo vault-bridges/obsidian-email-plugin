@@ -34,7 +34,7 @@ export class EmailDatabase {
 				.returning({ id: schema.emails.id })
 
 			if (attachments && attachments.length > 0) {
-				tx.insert(schema.attachments).values(
+				await tx.insert(schema.attachments).values(
 					attachments.map((attachment) => ({
 						emailMessageId: messageId as string,
 						filename: attachment.filename || null,
