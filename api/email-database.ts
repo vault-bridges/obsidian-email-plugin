@@ -18,7 +18,7 @@ export class EmailDatabase {
 		const { messageId, subject, from, to, date, html, text, attachments } = email
 
 		return this.db.transaction(async (tx) => {
-			const [emailId] = await tx
+			const [emailRecord] = await tx
 				.insert(schema.emails)
 				.values({
 					messageId: messageId || '',
@@ -31,7 +31,14 @@ export class EmailDatabase {
 					htmlContent: html || null,
 					textContent: text || null,
 				})
-				.returning({ id: schema.emails.id })
+				.returning({
+					id: schema.emails.id,
+					messageId: schema.emails.messageId,
+				})
+
+			if (!emailRecord) {
+				throw new Error('Failed to save email')
+			}
 
 			if (attachments && attachments.length > 0) {
 				await tx.insert(schema.attachments).values(
@@ -46,11 +53,9 @@ export class EmailDatabase {
 					})),
 				)
 			}
-			if (!emailId) {
-				throw new Error('Failed to save email')
-			}
 			const foundEmail = await this.db.query.emails.findFirst({
-				where: eq(schema.emails.id, emailId.id),
+				where: eq(schema.emails.messageId, emailRecord.messageId),
+
 				with: { attachments: true },
 			})
 			if (!foundEmail) {
