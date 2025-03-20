@@ -4,7 +4,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm ci --production
+RUN npm ci --omit=dev
 
 COPY . .
 
@@ -13,4 +13,4 @@ EXPOSE 25
 VOLUME /app/certs
 VOLUME /app/db
 
-CMD ["node", "./api/email-injest-service.ts"]
+CMD ["node", "--experimental-strip-types", "./api/email-injest-service.ts"]

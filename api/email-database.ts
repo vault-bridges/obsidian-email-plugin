@@ -2,7 +2,7 @@ import Database from 'libsql'
 import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/libsql'
 import type { ParsedMail } from 'mailparser'
-import * as schema from '../db/schema.ts'
+import * as schema from './schema.ts'
 
 export type EmailMessage = typeof schema.emails.$inferSelect & {
 	attachments: Array<typeof schema.attachments.$inferSelect>
