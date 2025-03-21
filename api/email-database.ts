@@ -38,10 +38,7 @@ export class EmailDatabase {
 						emailMessageId: messageId as string,
 						filename: attachment.filename || null,
 						mimetype: attachment.contentType || null,
-						content:
-							attachment.content instanceof Buffer
-								? attachment.content
-								: Buffer.from(attachment.content as Uint8Array),
+						content: attachment.content,
 					})),
 				)
 			}

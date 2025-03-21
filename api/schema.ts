@@ -3,7 +3,7 @@ import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export const emails = sqliteTable('emails', {
 	id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
-	messageId: text().unique().notNull(),
+	messageId: text().notNull(),
 	subject: text(),
 	fromAddress: text(),
 	toAddress: text(),
