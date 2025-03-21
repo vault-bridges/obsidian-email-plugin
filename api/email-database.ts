@@ -17,28 +17,20 @@ export class EmailDatabase {
 	async saveEmail(email: ParsedMail): Promise<EmailMessage> {
 		const { messageId, subject, from, to, date, html, text, attachments } = email
 
-		return this.db.transaction(async (tx) => {
-			const [emailRecord] = await tx
-				.insert(schema.emails)
-				.values({
-					messageId: messageId || '',
-					subject: subject || null,
-					fromAddress: from?.text || null,
-					toAddress: Array.isArray(to)
-						? to.map((t) => t.text).join(', ') || null
-						: to?.text || null,
-					date: date || null,
-					htmlContent: html || null,
-					textContent: text || null,
-				})
-				.returning({
-					id: schema.emails.id,
-					messageId: schema.emails.messageId,
-				})
+		if (!messageId) {
+			throw new Error('Missing messageId')
+		}
 
-			if (!emailRecord) {
-				throw new Error('Failed to save email')
-			}
+		return this.db.transaction(async (tx) => {
+			await tx.insert(schema.emails).values({
+				messageId: messageId,
+				subject: subject || null,
+				fromAddress: from?.text || null,
+				toAddress: Array.isArray(to) ? to.map((t) => t.text).join(', ') || null : to?.text || null,
+				date: date || null,
+				htmlContent: html || null,
+				textContent: text || null,
+			})
 
 			if (attachments && attachments.length > 0) {
 				await tx.insert(schema.attachments).values(
@@ -54,8 +46,7 @@ export class EmailDatabase {
 				)
 			}
 			const foundEmail = await this.db.query.emails.findFirst({
-				where: eq(schema.emails.messageId, emailRecord.messageId),
-
+				where: eq(schema.emails.messageId, messageId),
 				with: { attachments: true },
 			})
 			if (!foundEmail) {
