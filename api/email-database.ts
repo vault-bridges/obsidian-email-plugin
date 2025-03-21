@@ -33,14 +33,16 @@ export class EmailDatabase {
 			})
 
 			if (attachments && attachments.length > 0) {
-				await tx.insert(schema.attachments).values(
-					attachments.map((attachment) => ({
-						emailMessageId: messageId as string,
+				for (const attachment of attachments) {
+					await tx.insert(schema.attachments).values({
+						emailMessageId: messageId,
 						filename: attachment.filename || null,
 						mimetype: attachment.contentType || null,
-						content: attachment.content,
-					})),
-				)
+						content: Buffer.isBuffer(attachment.content)
+							? attachment.content
+							: Buffer.from(attachment.content as Uint8Array),
+					})
+				}
 			}
 		})
 
