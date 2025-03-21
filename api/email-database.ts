@@ -21,7 +21,7 @@ export class EmailDatabase {
 			throw new Error('Missing messageId')
 		}
 
-		return this.db.transaction(async (tx) => {
+		await this.db.transaction(async (tx) => {
 			await tx.insert(schema.emails).values({
 				messageId: messageId,
 				subject: subject || null,
@@ -45,15 +45,16 @@ export class EmailDatabase {
 					})),
 				)
 			}
-			const foundEmail = await this.db.query.emails.findFirst({
-				where: eq(schema.emails.messageId, messageId),
-				with: { attachments: true },
-			})
-			if (!foundEmail) {
-				throw new Error('Failed to find saved email')
-			}
-			return foundEmail
 		})
+
+		const foundEmail = await this.db.query.emails.findFirst({
+			where: eq(schema.emails.messageId, messageId),
+			with: { attachments: true },
+		})
+		if (!foundEmail) {
+			throw new Error('Failed to find saved email')
+		}
+		return foundEmail
 	}
 
 	async getEmailsForPlugin(pluginId: string) {
