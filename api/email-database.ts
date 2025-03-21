@@ -14,7 +14,7 @@ export class EmailDatabase {
 		this.db = drizzle({ connection: `file:${dbPath}`, schema })
 	}
 
-	async saveEmail(email: ParsedMail): Promise<EmailMessage> {
+	async saveEmail(email: ParsedMail) {
 		const { messageId, subject, from, to, date, html, text, attachments } = email
 
 		if (!messageId) {
@@ -48,12 +48,12 @@ export class EmailDatabase {
 
 		const foundEmail = await this.db.query.emails.findFirst({
 			where: eq(schema.emails.messageId, messageId),
-			with: { attachments: true },
+			with: { attachments: { columns: { content: false } } },
 		})
 		if (!foundEmail) {
 			throw new Error('Failed to find saved email')
 		}
-		return foundEmail
+		return foundEmail as EmailMessage
 	}
 
 	async getEmailsForPlugin(pluginId: string) {
