@@ -16,7 +16,7 @@ export class PluginRegistry {
 		return { success: true, pluginId: plugin.id }
 	}
 
-	findMatchingPlugins(email: EmailMessage): PluginRegistration[] {
+	findMatchingPlugins(emailId: number): PluginRegistration[] {
 		return Array.from(this.plugins.values()).filter((plugin) =>
 			this.matchesPluginCriteria(email, plugin),
 		)
@@ -49,8 +49,8 @@ export class PluginRegistry {
 		return true
 	}
 
-	async notifyPlugins(email: EmailMessage) {
-		const matchingPlugins = this.findMatchingPlugins(email)
+	async notifyPlugins(emailId: number) {
+		const matchingPlugins = this.findMatchingPlugins(emailId)
 
 		for (const plugin of matchingPlugins) {
 			try {

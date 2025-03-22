@@ -14,9 +14,9 @@ export const emails = sqliteTable('emails', {
 
 export const attachments = sqliteTable('attachments', {
 	id: integer().primaryKey({ autoIncrement: true }),
-	emailMessageId: text()
+	emailId: integer()
 		.notNull()
-		.references(() => emails.messageId),
+		.references(() => emails.id),
 	filename: text(),
 	mimetype: text(),
 	content: blob({ mode: 'buffer' }),
@@ -28,7 +28,7 @@ export const emailsRelations = relations(emails, ({ many }) => ({
 
 export const attachmentsRelations = relations(attachments, ({ one }) => ({
 	email: one(emails, {
-		fields: [attachments.emailMessageId],
-		references: [emails.messageId],
+		fields: [attachments.emailId],
+		references: [emails.id],
 	}),
 }))
