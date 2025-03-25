@@ -7,19 +7,16 @@ import { SMTPServer, type SMTPServerDataStream, type SMTPServerSession } from 's
 import { ConfigurationManager } from './configuration-manager.ts'
 import { EmailDatabase } from './email-database.ts'
 import { PluginAPIService } from './plugin-api-service.ts'
-import { PluginRegistry } from './plugin-registry.ts'
 
 export class EmailIngestService {
 	private smtpServer!: SMTPServer
 	private apiService!: PluginAPIService
 	private database: EmailDatabase
-	private pluginRegistry: PluginRegistry
 	private configManager: ConfigurationManager
 
 	constructor() {
 		this.configManager = new ConfigurationManager()
 		this.database = new EmailDatabase(this.configManager.get('database.path'))
-		this.pluginRegistry = new PluginRegistry()
 
 		this.initializeServices()
 	}
@@ -30,9 +27,16 @@ export class EmailIngestService {
 
 		// Start API service
 		const app = this.apiService.initializeRoutes()
-		serve({ fetch: app.fetch, port: this.configManager.get('api.port') }, (info) => {
-			console.log(`Listening on ${info.address}:${info.port}`)
-		})
+		serve(
+			{
+				fetch: app.fetch,
+				port: this.configManager.get('api.port'),
+				hostname: this.configManager.get('api.host'),
+			},
+			(info) => {
+				console.log(`Listening on ${info.address}:${info.port}`)
+			},
+		)
 	}
 
 	private initializeServices() {
@@ -51,7 +55,7 @@ export class EmailIngestService {
 		})
 
 		// Initialize API service
-		this.apiService = new PluginAPIService(this.pluginRegistry, this.database)
+		this.apiService = new PluginAPIService(this.database)
 	}
 
 	private async processIncomingEmail(

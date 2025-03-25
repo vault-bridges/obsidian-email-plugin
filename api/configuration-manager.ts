@@ -3,6 +3,7 @@ import process from 'process'
 
 interface ServiceConfiguration {
 	api: {
+		host: string
 		port: number
 	}
 	smtp: {
@@ -37,6 +38,7 @@ export class ConfigurationManager {
 	private loadConfiguration() {
 		this.config = {
 			api: {
+				host: process.env.API_HOST || 'localhost',
 				port: Number.parseInt(process.env.API_PORT || '80'),
 			},
 			smtp: {

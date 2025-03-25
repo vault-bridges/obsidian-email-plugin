@@ -32,20 +32,6 @@ export class PluginRegistry {
 			}
 		}
 
-		// Subject matching
-		if (rules.subjectContains?.length) {
-			if (!rules.subjectContains.some((term) => emailMessage.subject?.includes(term))) {
-				return false
-			}
-		}
-
-		// Body matching
-		if (rules.bodyContains?.length) {
-			if (!rules.bodyContains.some((term) => emailMessage.textContent?.includes(term))) {
-				return false
-			}
-		}
-
 		return true
 	}
 

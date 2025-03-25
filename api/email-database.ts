@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, gte } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/libsql/node'
 import type { ParsedMail } from 'mailparser'
 import * as schema from './schema.ts'
@@ -57,36 +57,18 @@ export class EmailDatabase {
 		})
 	}
 
-	async getEmail(emailId: number) {
-		const foundEmail = await this.db.query.emails.findFirst({
+	getEmailsById(emailId: number) {
+		return this.db.query.emails.findFirst({
 			where: eq(schema.emails.id, emailId),
+			with: { attachments: { columns: { content: false } } },
 		})
-		const foundAttachments = await this.db.query.attachments.findMany({
-			where: eq(schema.attachments.emailId, emailId),
-		})
-		if (!foundEmail) {
-			throw new Error('Failed to find saved email')
-		}
-		return { ...foundEmail, attachments: foundAttachments }
 	}
 
-	async getEmailsForPlugin(pluginId: string) {
-		// Retrieve emails matching plugin criteria
-		// This is a placeholder implementation
-		const result = await this.db.select().from(schema.emails).all()
-
-		// Convert to EmailMessage format
-		return result.map((email) => ({
-			id: email.messageId,
-			pluginId,
-			from: email.fromAddress || '',
-			to: email.toAddress || '',
-			subject: email.subject || '',
-			body: email.htmlContent || email.textContent || '',
-			metadata: {
-				receivedAt: email.date ? new Date(email.date) : new Date(),
-				processed: true,
-			},
-		}))
+	getEmails(since: number) {
+		return this.db.query.emails.findMany({
+			// @ts-expect-error
+			where: gte(schema.emails.date, since),
+			with: { attachments: { columns: { content: false } } },
+		})
 	}
 }
