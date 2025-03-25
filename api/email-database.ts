@@ -66,8 +66,7 @@ export class EmailDatabase {
 
 	getEmails(since: number) {
 		return this.db.query.emails.findMany({
-			// @ts-expect-error
-			where: gte(schema.emails.date, since),
+			where: gte(schema.emails.createdAt, since),
 			with: { attachments: { columns: { content: false } } },
 		})
 	}

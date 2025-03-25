@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export const emails = sqliteTable('emails', {
@@ -10,6 +10,7 @@ export const emails = sqliteTable('emails', {
 	date: integer({ mode: 'timestamp' }),
 	htmlContent: text(),
 	textContent: text(),
+	createdAt: integer({ mode: 'number' }).notNull().default(sql`(unixepoch())`),
 })
 
 export const attachments = sqliteTable('attachments', {
