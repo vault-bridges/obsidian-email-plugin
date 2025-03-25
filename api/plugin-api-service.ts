@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
 import { url, array, object, optional, pipe, string, type InferInput } from 'valibot'
-import { ConfigurationManager } from './configuration-manager.ts'
+import type { ConfigurationManager } from './configuration-manager.ts'
 import type { EmailDatabase } from './email-database.ts'
 import { HTTPException } from 'hono/http-exception'
 
