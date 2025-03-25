@@ -1,5 +1,7 @@
 import { Hono } from 'hono'
+import { bearerAuth } from 'hono/bearer-auth'
 import { url, array, object, optional, pipe, string, type InferInput } from 'valibot'
+import { ConfigurationManager } from './configuration-manager.js'
 import type { EmailDatabase } from './email-database.js'
 import { HTTPException } from 'hono/http-exception'
 
@@ -16,13 +18,17 @@ export type PluginRegistration = InferInput<typeof PluginRegistrationSchema>
 
 export class PluginAPIService {
 	private database: EmailDatabase
+	private configManager: ConfigurationManager
 
-	constructor(database: EmailDatabase) {
+	constructor(database: EmailDatabase, configManager: ConfigurationManager) {
 		this.database = database
+		this.configManager = configManager
 	}
 
 	initializeRoutes() {
 		const app = new Hono()
+
+		app.use('*', bearerAuth({ token: this.configManager.get('api.token') }))
 
 		app.get('/emails/:emailId', async (context) => {
 			const emailId = Number(context.req.param('emailId'))

@@ -5,6 +5,7 @@ interface ServiceConfiguration {
 	api: {
 		host: string
 		port: number
+		token: string
 	}
 	smtp: {
 		host: string
@@ -40,6 +41,7 @@ export class ConfigurationManager {
 			api: {
 				host: process.env.API_HOST || 'localhost',
 				port: Number.parseInt(process.env.API_PORT || '80'),
+				token: process.env.API_TOKEN || '<PASSWORD>',
 			},
 			smtp: {
 				host: process.env.SMTP_HOST || 'localhost',

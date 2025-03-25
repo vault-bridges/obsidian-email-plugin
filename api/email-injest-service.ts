@@ -55,7 +55,7 @@ export class EmailIngestService {
 		})
 
 		// Initialize API service
-		this.apiService = new PluginAPIService(this.database)
+		this.apiService = new PluginAPIService(this.database, this.configManager)
 	}
 
 	private async processIncomingEmail(
