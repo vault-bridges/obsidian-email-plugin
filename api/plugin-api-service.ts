@@ -41,7 +41,7 @@ export class PluginAPIService {
 		const app = new Hono()
 
 		app.use('*', bearerAuth({ token: this.configManager.get('api.token') }))
-		app.use('*', cors({ origin: 'app://obsidian.md' }))
+		app.use('*', cors({ origin: 'app://obsidian.md', allowMethods: ['GET', 'Options'] }))
 
 		app.get('/emails/:emailId', async (context) => {
 			const emailId = Number(context.req.param('emailId'))
