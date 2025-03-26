@@ -1,22 +1,10 @@
 import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
+import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
-import type { SSEStreamingApi } from 'hono/streaming'
-import { streamSSE } from 'hono/streaming'
-import { array, type InferInput, object, optional, pipe, string, url } from 'valibot'
+import { streamSSE, type SSEStreamingApi } from 'hono/streaming'
 import type { ConfigurationManager } from './configuration-manager.ts'
 import type { EmailDatabase } from './email-database.ts'
-
-const PluginRegistrationSchema = object({
-	id: string(),
-	name: string(),
-	webhookUrl: pipe(string(), url()),
-	filterRules: object({
-		fromEmail: optional(array(string())),
-	}),
-})
-
-export type PluginRegistration = InferInput<typeof PluginRegistrationSchema>
 
 export class PluginAPIService {
 	private database: EmailDatabase
@@ -53,6 +41,7 @@ export class PluginAPIService {
 		const app = new Hono()
 
 		app.use('*', bearerAuth({ token: this.configManager.get('api.token') }))
+		app.use('*', cors({ origin: 'app://obsidian.md' }))
 
 		app.get('/emails/:emailId', async (context) => {
 			const emailId = Number(context.req.param('emailId'))
