@@ -40,7 +40,7 @@ export class PluginAPIService {
 	initializeRoutes() {
 		const app = new Hono()
 
-		app.use('*', cors({ origin: ['app://obsidian.md'], allowMethods: ['GET', 'OPTIONS'] }))
+		app.use('*', cors({ origin: ['app://obsidian.md'], allowMethods: ['Authentication'] }))
 		app.use('*', bearerAuth({ token: this.configManager.get('api.token') }))
 
 		app.get('/emails/:emailId', async (context) => {
