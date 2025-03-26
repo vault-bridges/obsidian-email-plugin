@@ -80,7 +80,14 @@ export class EmailIngestService {
 
 		const emailId = await this.database.saveEmail(parsed)
 		console.log('Email saved, id: ', emailId)
-		// await this.pluginRegistry.notifyPlugins(emailId)
+
+		// Get the email from the database to pass to notifyPlugins
+		const emailMessage = await this.database.getEmailsById(emailId)
+		if (emailMessage) {
+			// Notify the API service about the new email
+			this.apiService.notifyNewEmail(emailId)
+		}
+
 		callback(null)
 	}
 

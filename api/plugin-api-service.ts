@@ -1,9 +1,11 @@
 import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
-import { url, array, object, optional, pipe, string, type InferInput } from 'valibot'
+import { HTTPException } from 'hono/http-exception'
+import type { SSEStreamingApi } from 'hono/streaming'
+import { streamSSE } from 'hono/streaming'
+import { array, type InferInput, object, optional, pipe, string, url } from 'valibot'
 import type { ConfigurationManager } from './configuration-manager.ts'
 import type { EmailDatabase } from './email-database.ts'
-import { HTTPException } from 'hono/http-exception'
 
 const PluginRegistrationSchema = object({
 	id: string(),
@@ -19,10 +21,32 @@ export type PluginRegistration = InferInput<typeof PluginRegistrationSchema>
 export class PluginAPIService {
 	private database: EmailDatabase
 	private configManager: ConfigurationManager
+	private activeStreams: Set<SSEStreamingApi> = new Set()
+	private emailNotificationId = 0
 
 	constructor(database: EmailDatabase, configManager: ConfigurationManager) {
 		this.database = database
 		this.configManager = configManager
+	}
+
+	/**
+	 * Notify all connected clients about a new email
+	 */
+	notifyNewEmail(emailId: number) {
+		// Send notification to all active streams
+		for (const stream of this.activeStreams) {
+			stream
+				.writeSSE({
+					data: JSON.stringify({ emailId }),
+					event: 'new-email',
+					id: String(this.emailNotificationId++),
+				})
+				.catch((error) => {
+					console.error('Error sending SSE notification:', error)
+					// Remove failed stream
+					this.activeStreams.delete(stream)
+				})
+		}
 	}
 
 	initializeRoutes() {
@@ -44,6 +68,37 @@ export class PluginAPIService {
 			const emails = await this.database.getEmails(since)
 			return context.json(emails)
 		})
+
+		app.get('/notify', async (c) =>
+			streamSSE(c, async (stream) => {
+				// Register this stream
+				this.activeStreams.add(stream)
+
+				// Send initial connection confirmation
+				await stream.writeSSE({
+					data: JSON.stringify({ connected: true, timestamp: Date.now() }),
+					event: 'connected',
+					id: '0',
+				})
+
+				try {
+					// Keep the connection alive with heartbeats
+					while (true) {
+						await stream.sleep(30000) // 30 seconds heartbeat
+						await stream.writeSSE({
+							data: JSON.stringify({ heartbeat: true, timestamp: Date.now() }),
+							event: 'heartbeat',
+							id: 'heartbeat',
+						})
+					}
+				} catch (error) {
+					console.error('SSE stream error:', error)
+				} finally {
+					// Clean up when the connection is closed
+					this.activeStreams.delete(stream)
+				}
+			}),
+		)
 
 		return app
 	}
