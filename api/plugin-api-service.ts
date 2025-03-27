@@ -45,7 +45,7 @@ export class PluginAPIService {
 			cors({
 				origin: ['app://obsidian.md'],
 				allowMethods: ['GET', 'OPTIONS'],
-				allowHeaders: ['Authorization'],
+				allowHeaders: ['Authorization', 'Cache-Control'],
 			}),
 			bearerAuth({ token: this.configManager.get('api.token') }),
 		)
