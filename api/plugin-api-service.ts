@@ -45,10 +45,10 @@ export class PluginAPIService {
 			cors({
 				origin: ['app://obsidian.md'],
 				allowMethods: ['GET', 'OPTIONS'],
-				allowHeaders: ['Authentication'],
+				allowHeaders: ['Authorization'],
 			}),
+			bearerAuth({ token: this.configManager.get('api.token') }),
 		)
-		app.use('*', bearerAuth({ token: this.configManager.get('api.token') }))
 
 		app.get('/emails/:emailId', async (context) => {
 			const emailId = Number(context.req.param('emailId'))
