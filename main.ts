@@ -3,12 +3,12 @@ import {
 	Editor,
 	type MarkdownFileInfo,
 	MarkdownView,
-	Modal,
 	Notice,
 	Plugin,
 	PluginSettingTab,
 	Setting,
 } from 'obsidian'
+import { SSE } from 'sse.js'
 
 interface EmailPluginSettings {
 	serviceUrl: string
@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS: EmailPluginSettings = {
 
 export default class EmailPlugin extends Plugin {
 	settings!: EmailPluginSettings
+	private eventSource: SSE | null = null
 
 	override async onload() {
 		await this.loadSettings()
@@ -61,9 +62,75 @@ export default class EmailPlugin extends Plugin {
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000))
+
+		// Connect to the notification API
+		this.connectToNotificationApi()
 	}
 
-	override onunload() {}
+	override onunload() {
+		// Close the notification connection if it exists
+		if (this.eventSource) {
+			this.eventSource.close()
+			this.eventSource = null
+		}
+	}
+
+	private connectToNotificationApi() {
+		try {
+			// Create a new EventSource connection to the /notify endpoint
+			// This custom implementation supports authorization headers
+			const url = new URL('/notify', this.settings.serviceUrl).toString()
+
+			this.eventSource = new SSE(url, {
+				headers: {
+					Authorization: `Bearer ${this.settings.serviceApiKey}`,
+					Accept: 'text/event-stream',
+					'Cache-Control': 'no-cache',
+				},
+			})
+
+			// Handle connection established
+			this.eventSource.addEventListener('connected', (event: MessageEvent) => {
+				console.log('Connected to notification API:', event.data)
+				new Notice('Connected to email notification service')
+			})
+
+			// Handle heartbeat to keep connection alive
+			this.eventSource.addEventListener('heartbeat', (event: MessageEvent) => {
+				console.log('Notification heartbeat:', event.data)
+			})
+
+			// Handle new email notifications
+			this.eventSource.addEventListener('new-email', (event: MessageEvent) => {
+				const data = JSON.parse(event.data)
+				console.log('New email notification received:', data)
+				new Notice(`New email received! ID: ${data.emailId}`)
+				// Here you can add code to fetch the email details and process it
+			})
+
+			// Handle errors
+			this.eventSource.onerror = (error) => {
+				console.error('Notification API connection error:', error)
+				new Notice('Failed to connect to email notification service')
+
+				// Close and reset the connection on error
+				if (this.eventSource) {
+					this.eventSource.close()
+					this.eventSource = null
+				}
+
+				// Try to reconnect after a delay
+				setTimeout(() => {
+					if (!this.eventSource) {
+						this.connectToNotificationApi()
+					}
+				}, 10000) // Retry after 10 seconds
+			}
+		} catch (error) {
+			console.error('Failed to connect to notification API:', error)
+			new Notice('Failed to connect to email notification service')
+		}
+	}
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData())
