@@ -121,6 +121,12 @@ export default class EmailPlugin extends Plugin {
 		return `${base} (${duplicateCount}).${ext}`
 	}
 
+	private async ensureEmailSavePathExists() {
+		if (!this.app.vault.getFolderByPath(this.settings.emailSavePath)) {
+			await this.app.vault.createFolder(this.settings.emailSavePath)
+		}
+	}
+
 	private connectToNotificationApi() {
 		try {
 			// Create a new EventSource connection to the /notify endpoint
@@ -156,6 +162,7 @@ export default class EmailPlugin extends Plugin {
 				const email = await this.fetchEmail(data.emailId)
 				if (email) {
 					console.log('Fetched email details:', email)
+					await this.ensureEmailSavePathExists()
 					const noteFilePath = `${this.settings.emailSavePath}/${this.getUniqFilename(`${email.subject}.md`)}`
 					const noteFile = await this.app.vault.create(
 						noteFilePath,
