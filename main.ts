@@ -1,13 +1,4 @@
-import {
-	App,
-	Editor,
-	type MarkdownFileInfo,
-	MarkdownView,
-	Notice,
-	Plugin,
-	PluginSettingTab,
-	Setting,
-} from 'obsidian'
+import { App, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian'
 import { SSE } from 'sse.js'
 import type { EmailMessage } from './api/email-database.ts'
 
@@ -29,10 +20,6 @@ export default class EmailPlugin extends Plugin {
 
 	override async onload() {
 		await this.loadSettings()
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem()
-		statusBarItemEl.setText('Status Bar Text')
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new EmailPluginSettingTab(this.app, this))
@@ -128,7 +115,13 @@ export default class EmailPlugin extends Plugin {
 	}
 
 	private connectToNotificationApi() {
+		let timeout: ReturnType<typeof setTimeout> | null = null
 		try {
+			if (this.eventSource) {
+				this.eventSource.close()
+				this.eventSource = null
+			}
+
 			// Create a new EventSource connection to the /notify endpoint
 			// This custom implementation supports authorization headers
 			const url = new URL('/notify', this.settings.serviceUrl).toString()
@@ -145,11 +138,16 @@ export default class EmailPlugin extends Plugin {
 			this.eventSource.addEventListener('connected', (event: MessageEvent) => {
 				console.log('Connected to notification API:', event.data)
 				new Notice('Connected to email notification service')
+				timeout = setTimeout(this.connectToNotificationApi.bind(this), 60000)
 			})
 
 			// Handle heartbeat to keep connection alive
 			this.eventSource.addEventListener('heartbeat', (event: MessageEvent) => {
 				console.log('Notification heartbeat:', event.data)
+				if (timeout) {
+					clearTimeout(timeout)
+					timeout = setTimeout(this.connectToNotificationApi.bind(this), 60000)
+				}
 			})
 
 			// Handle new email notifications
