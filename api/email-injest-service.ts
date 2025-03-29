@@ -83,7 +83,7 @@ export class EmailIngestService {
 		this.apiService.notifyNewEmail(emailId)
 
 		// Get the email from the database to pass to notifyPlugins
-		const emailMessage = await this.database.getEmailsById(emailId)
+		const emailMessage = await this.database.getEmailById(emailId)
 		if (emailMessage) {
 			// Notify the API service about the new email
 		}

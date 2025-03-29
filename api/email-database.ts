@@ -1,4 +1,4 @@
-import { eq, gte } from 'drizzle-orm'
+import { and, eq, gte } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/libsql/node'
 import type { ParsedMail } from 'mailparser'
 import * as schema from './schema.ts'
@@ -57,7 +57,7 @@ export class EmailDatabase {
 		})
 	}
 
-	getEmailsById(emailId: number) {
+	getEmailById(emailId: number) {
 		return this.db.query.emails.findFirst({
 			where: eq(schema.emails.id, emailId),
 			with: { attachments: { columns: { content: false } } },
@@ -69,5 +69,14 @@ export class EmailDatabase {
 			where: gte(schema.emails.createdAt, since),
 			with: { attachments: { columns: { content: false } } },
 		})
+	}
+
+	async getAttachmentContent(emailId: number, attachmentId: number) {
+		const attachment = await this.db.query.attachments.findFirst({
+			where: and(eq(schema.attachments.emailId, emailId), eq(schema.attachments.id, attachmentId)),
+			columns: { content: true },
+		})
+		if (!attachment) return null
+		return attachment.content
 	}
 }

@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
-import { streamSSE, type SSEStreamingApi } from 'hono/streaming'
+import { streamSSE, type SSEStreamingApi, stream } from 'hono/streaming'
 import type { ConfigurationManager } from './configuration-manager.ts'
 import type { EmailDatabase } from './email-database.ts'
 
@@ -52,7 +52,7 @@ export class PluginAPIService {
 		app.get('/emails/:emailId', async (context) => {
 			const emailId = Number(context.req.param('emailId'))
 			if (!emailId) throw new HTTPException(401, { message: 'Missing emailId' })
-			const email = await this.database.getEmailsById(emailId)
+			const email = await this.database.getEmailById(emailId)
 			if (!email) throw new HTTPException(404, { message: 'Email not found' })
 			return context.json(email)
 		})
@@ -62,6 +62,18 @@ export class PluginAPIService {
 			if (!since) throw new HTTPException(401, { message: 'Missing since query parameter' })
 			const emails = await this.database.getEmails(since)
 			return context.json(emails)
+		})
+
+		app.get('/emails/:emailId/attachments/:attachmentId', async (context) => {
+			const emailId = Number(context.req.param('emailId'))
+			if (!emailId) throw new HTTPException(401, { message: 'Missing emailId' })
+			const attachmentId = Number(context.req.param('attachmentId'))
+			if (!attachmentId) throw new HTTPException(401, { message: 'Missing attachmentId' })
+			const attachmentContent = await this.database.getAttachmentContent(emailId, attachmentId)
+			if (!attachmentContent) throw new HTTPException(404, { message: 'Attachment not found' })
+			return stream(context, async (stream) => {
+				await stream.write(attachmentContent)
+			})
 		})
 
 		app.get('/notify', async (c) =>
