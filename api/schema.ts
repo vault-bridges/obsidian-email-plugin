@@ -10,7 +10,7 @@ export const emails = sqliteTable('emails', {
 	date: integer({ mode: 'timestamp' }),
 	htmlContent: text(),
 	textContent: text(),
-	createdAt: integer({ mode: 'number' }).notNull().default(sql`(unixepoch())`),
+	createdAt: integer({ mode: 'number' }).notNull().default(sql`(unixepoch('subsec') * 1000)`),
 })
 
 export const attachments = sqliteTable('attachments', {

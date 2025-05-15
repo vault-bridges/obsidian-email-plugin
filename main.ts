@@ -6,12 +6,14 @@ interface EmailPluginSettings {
 	serviceUrl: string
 	serviceApiKey: string
 	emailSavePath: string
+	lastEmailFetchTimestamp: number
 }
 
 const DEFAULT_SETTINGS: EmailPluginSettings = {
 	serviceUrl: 'https://api.example.com',
 	serviceApiKey: '',
 	emailSavePath: 'emails',
+	lastEmailFetchTimestamp: 0,
 }
 
 export default class EmailPlugin extends Plugin {
@@ -26,6 +28,9 @@ export default class EmailPlugin extends Plugin {
 
 		// Connect to the notification API
 		this.connectToNotificationApi()
+
+		// Check emails
+		await this.fetchAndProcessEmails()
 	}
 
 	override onunload() {
@@ -109,8 +114,67 @@ export default class EmailPlugin extends Plugin {
 	}
 
 	private async ensureEmailSavePathExists() {
+		console.log('Ensuring email save path exists:', this.settings.emailSavePath)
 		if (!this.app.vault.getFolderByPath(this.settings.emailSavePath)) {
+			console.log('Creating email save path:', this.settings.emailSavePath)
 			await this.app.vault.createFolder(this.settings.emailSavePath)
+		}
+	}
+
+	private async fetchAndProcessEmails() {
+		// Fetch new emails since last check
+		try {
+			const url = new URL('/emails', this.settings.serviceUrl)
+			url.searchParams.append('since', (this.settings.lastEmailFetchTimestamp + 1).toString())
+
+			const response = await fetch(url.toString(), {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${this.settings.serviceApiKey}`,
+				},
+			})
+
+			if (response.ok) {
+				const emails = (await response.json()) as EmailMessage[]
+				console.log(`Fetched ${emails.length} new emails`)
+
+				// Process each email
+				for (const email of emails) {
+					console.log('Processing email:', email)
+					await this.ensureEmailSavePathExists()
+					const noteFilePath = `${this.settings.emailSavePath}/${this.getUniqFilename(`${email.subject}.md`)}`
+					const noteFile = await this.app.vault.create(
+						noteFilePath,
+						email.htmlContent || email.textContent || 'no content',
+					)
+
+					if (email.attachments.length > 0) {
+						console.log('Downloading attachments...')
+						await this.app.vault.append(noteFile, 'Attachments:\n')
+
+						for (const attachment of email.attachments) {
+							const attachmentData = await this.fetchAttachment(email.id, attachment.id)
+							if (attachmentData) {
+								console.log(`Downloaded attachment ${attachment.filename}`)
+								const attachmentFileName = this.getUniqFilename(
+									attachment.filename || 'attachment.bin',
+								)
+								const attachmentFilePath = `${this.settings.emailSavePath}/${attachmentFileName}`
+								await this.app.vault.append(noteFile, `- [[${attachmentFileName}]]\n`)
+								await this.app.vault.createBinary(attachmentFilePath, attachmentData)
+							}
+						}
+					}
+				}
+
+				// Update the timestamp to current time and save settings
+				this.settings.lastEmailFetchTimestamp = Date.now()
+				await this.saveSettings()
+			} else {
+				console.error(`Failed to fetch emails: ${response.status} ${response.statusText}`)
+			}
+		} catch (error) {
+			console.error('Error fetching emails:', error)
 		}
 	}
 
@@ -155,6 +219,10 @@ export default class EmailPlugin extends Plugin {
 				const data = JSON.parse(event.data)
 				console.log('New email notification received:', data)
 				new Notice(`New email received! ID: ${data.emailId}`)
+
+				// Update the timestamp to current time and save settings
+				this.settings.lastEmailFetchTimestamp = Date.now()
+				await this.saveSettings()
 
 				// Fetch the email details using the fetchEmail method
 				const email = await this.fetchEmail(data.emailId)

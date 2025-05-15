@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
-import { streamSSE, type SSEStreamingApi, stream } from 'hono/streaming'
+import { type SSEStreamingApi, stream, streamSSE } from 'hono/streaming'
 import type { ConfigurationManager } from './configuration-manager.ts'
 import type { EmailDatabase } from './email-database.ts'
 
@@ -58,9 +58,9 @@ export class PluginAPIService {
 		})
 
 		app.get('/emails', async (context) => {
-			const since = Number(context.req.query('since'))
+			const since = context.req.query('since')
 			if (!since) throw new HTTPException(401, { message: 'Missing since query parameter' })
-			const emails = await this.database.getEmails(since)
+			const emails = await this.database.getEmails(Number(since))
 			return context.json(emails)
 		})
 
