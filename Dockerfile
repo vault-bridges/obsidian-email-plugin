@@ -1,10 +1,14 @@
-FROM node:22.14.0-slim
+FROM node:22.16.0-slim
 
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY package*.json .npmrc ./
-RUN npm ci --omit=dev
+# Install pnpm
+RUN corepack enable
+
+# Copy package files
+COPY pnpm-lock.yaml pnpm-workspace.yaml .pnpmrc ./
+RUN pnpm install --prod --frozen-lockfile
 
 COPY . .
 

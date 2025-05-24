@@ -62,7 +62,7 @@ The API service is a Node.js application that:
 
 1. Clone the repository
 2. Provide env variables from the next section
-3. Install dependencies with `npm install`
+3. Install dependencies with `pnpm install`
 
 ### Configuration
 
@@ -96,7 +96,7 @@ node api/index.ts
 For production use, consider using a process manager like PM2:
 
 ```bash
-npm install -g pm2
+pnpm install -g pm2
 pm2 start api/index.ts --name email-api
 ```
 
@@ -107,8 +107,8 @@ pm2 start api/index.ts --name email-api
 If you want to contribute to the plugin or modify it for your own needs:
 
 1. Clone the repository
-2. Install dependencies with `npm install`
-3. Run `npm run dev` to start the compilation in watch mode
+2. Install dependencies with `pnpm install`
+3. Run `pnpm run dev` to start the compilation in watch mode
 4. Make changes to the TypeScript files
 5. Reload Obsidian to test your changes
 
