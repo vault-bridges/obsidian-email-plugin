@@ -26,11 +26,13 @@ export default class EmailPlugin extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new EmailPluginSettingTab(this.app, this))
 
-		// Connect to the notification API
-		this.connectToNotificationApi()
+		this.app.workspace.onLayoutReady(async () => {
+			// Connect to the notification API
+			this.connectToNotificationApi()
 
-		// Check emails
-		await this.fetchAndProcessEmails()
+			// Check emails
+			await this.fetchAndProcessEmails()
+		})
 	}
 
 	override onunload() {
@@ -114,9 +116,7 @@ export default class EmailPlugin extends Plugin {
 	}
 
 	private async ensureEmailSavePathExists() {
-		console.log('Ensuring email save path exists:', this.settings.emailSavePath)
 		if (!this.app.vault.getFolderByPath(this.settings.emailSavePath)) {
-			console.log('Creating email save path:', this.settings.emailSavePath)
 			await this.app.vault.createFolder(this.settings.emailSavePath)
 		}
 	}
