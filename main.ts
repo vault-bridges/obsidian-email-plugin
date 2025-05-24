@@ -49,56 +49,15 @@ export default class EmailPlugin extends Plugin {
 	 * @returns The email data or null if there was an error
 	 */
 	async fetchEmail(emailId: number) {
-		try {
-			const url = new URL(`/emails/${emailId}`, this.settings.serviceUrl).toString()
-
-			const response = await fetch(url, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${this.settings.serviceApiKey}`,
-				},
-			})
-
-			if (!response.ok) {
-				throw new Error(`Failed to fetch email: ${response.status} ${response.statusText}`)
-			}
-
-			return (await response.json()) as EmailMessage
-		} catch (error) {
-			console.error('Error fetching email:', error)
-			if (error instanceof Error) {
-				new Notice(`Failed to fetch email: ${error.message}`)
-			}
-			return null
-		}
+		const url = new URL(`/emails/${emailId}`, this.settings.serviceUrl)
+		const response = await this.apiRequest(url)
+		return (await response?.json()) as EmailMessage | null
 	}
 
 	async fetchAttachment(emailId: number, attachmentId: number): Promise<ArrayBuffer | null> {
-		try {
-			const url = new URL(
-				`/emails/${emailId}/attachments/${attachmentId}`,
-				this.settings.serviceUrl,
-			).toString()
-
-			const response = await fetch(url, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${this.settings.serviceApiKey}`,
-				},
-			})
-
-			if (!response.ok) {
-				throw new Error(`Failed to fetch attachment: ${response.status} ${response.statusText}`)
-			}
-
-			return await response.arrayBuffer()
-		} catch (error) {
-			console.error('Error fetching attachment:', error)
-			if (error instanceof Error) {
-				new Notice(`Failed to fetch attachment: ${error.message}`)
-			}
-			return null
-		}
+		const url = new URL(`/emails/${emailId}/attachments/${attachmentId}`, this.settings.serviceUrl)
+		const response = await this.apiRequest(url)
+		return (await response?.arrayBuffer()) as ArrayBuffer | null
 	}
 
 	private getUniqFilename(filename: string) {
@@ -121,12 +80,45 @@ export default class EmailPlugin extends Plugin {
 		}
 	}
 
-	private async fetchAndProcessEmails() {
-		// Fetch new emails since last check
-		try {
-			const url = new URL('/emails', this.settings.serviceUrl)
-			url.searchParams.append('since', (this.settings.lastEmailFetchTimestamp + 1).toString())
+	/**
+	 * Process a single email - create a note and handle attachments
+	 * @param email The email to process
+	 */
+	private async processEmail(email: EmailMessage) {
+		console.log('Processing email:', email)
+		await this.ensureEmailSavePathExists()
+		const noteFilePath = `${this.settings.emailSavePath}/${this.getUniqFilename(`${email.subject}.md`)}`
+		const noteFile = await this.app.vault.create(
+			noteFilePath,
+			email.htmlContent || email.textContent || 'no content',
+		)
 
+		if (email.attachments.length > 0) {
+			console.log('Downloading attachments...')
+			await this.app.vault.append(noteFile, 'Attachments:\n')
+
+			for (const attachment of email.attachments) {
+				const attachmentData = await this.fetchAttachment(email.id, attachment.id)
+				if (attachmentData) {
+					console.log(`Downloaded attachment ${attachment.filename}`)
+					const attachmentFileName = this.getUniqFilename(attachment.filename || 'attachment.bin')
+					const attachmentFilePath = `${this.settings.emailSavePath}/${attachmentFileName}`
+					await this.app.vault.append(noteFile, `- [[${attachmentFileName}]]\n`)
+					await this.app.vault.createBinary(attachmentFilePath, attachmentData)
+				}
+			}
+		}
+
+		return noteFile
+	}
+
+	/**
+	 * Make an API request with proper headers and error handling
+	 * @param url The API URL
+	 * @returns The response or null if there was an error
+	 */
+	private async apiRequest(url: URL) {
+		try {
 			const response = await fetch(url.toString(), {
 				method: 'GET',
 				headers: {
@@ -134,47 +126,42 @@ export default class EmailPlugin extends Plugin {
 				},
 			})
 
-			if (response.ok) {
-				const emails = (await response.json()) as EmailMessage[]
-				console.log(`Fetched ${emails.length} new emails`)
-
-				// Process each email
-				for (const email of emails) {
-					console.log('Processing email:', email)
-					await this.ensureEmailSavePathExists()
-					const noteFilePath = `${this.settings.emailSavePath}/${this.getUniqFilename(`${email.subject}.md`)}`
-					const noteFile = await this.app.vault.create(
-						noteFilePath,
-						email.htmlContent || email.textContent || 'no content',
-					)
-
-					if (email.attachments.length > 0) {
-						console.log('Downloading attachments...')
-						await this.app.vault.append(noteFile, 'Attachments:\n')
-
-						for (const attachment of email.attachments) {
-							const attachmentData = await this.fetchAttachment(email.id, attachment.id)
-							if (attachmentData) {
-								console.log(`Downloaded attachment ${attachment.filename}`)
-								const attachmentFileName = this.getUniqFilename(
-									attachment.filename || 'attachment.bin',
-								)
-								const attachmentFilePath = `${this.settings.emailSavePath}/${attachmentFileName}`
-								await this.app.vault.append(noteFile, `- [[${attachmentFileName}]]\n`)
-								await this.app.vault.createBinary(attachmentFilePath, attachmentData)
-							}
-						}
-					}
-				}
-
-				// Update the timestamp to current time and save settings
-				this.settings.lastEmailFetchTimestamp = Date.now()
-				await this.saveSettings()
-			} else {
-				console.error(`Failed to fetch emails: ${response.status} ${response.statusText}`)
+			if (!response.ok) {
+				throw new Error(`API request failed: ${response.status} ${response.statusText}`)
 			}
+
+			return response
 		} catch (error) {
-			console.error('Error fetching emails:', error)
+			console.error(`Error in API request to ${url}:`, error)
+			if (error instanceof Error) {
+				new Notice(`API request failed: ${error.message}`)
+			}
+			return null
+		}
+	}
+
+	private async fetchAndProcessEmails() {
+		// Fetch new emails since last check
+		const params = {
+			since: (this.settings.lastEmailFetchTimestamp + 1).toString(),
+		}
+
+		const url = new URL('/emails', this.settings.serviceUrl)
+		url.search = new URLSearchParams(params).toString()
+		const response = await this.apiRequest(url)
+		const emails = (await response?.json()) as EmailMessage[] | null
+
+		if (emails) {
+			console.log(`Fetched ${emails.length} new emails`)
+
+			// Process each email
+			for (const email of emails) {
+				await this.processEmail(email)
+			}
+
+			// Update the timestamp to the current time and save settings
+			this.settings.lastEmailFetchTimestamp = Date.now()
+			await this.saveSettings()
 		}
 	}
 
@@ -228,32 +215,8 @@ export default class EmailPlugin extends Plugin {
 				const email = await this.fetchEmail(data.emailId)
 				if (email) {
 					console.log('Fetched email details:', email)
-					await this.ensureEmailSavePathExists()
-					const noteFilePath = `${this.settings.emailSavePath}/${this.getUniqFilename(`${email.subject}.md`)}`
-					const noteFile = await this.app.vault.create(
-						noteFilePath,
-						email.htmlContent || email.textContent || 'no content',
-					)
-
-					console.log(noteFilePath, noteFile)
-
-					if (email.attachments.length > 0) {
-						console.log('Downloading attachments...')
-						await this.app.vault.append(noteFile, 'Attachments:\n')
-
-						for (const attachment of email.attachments) {
-							const attachmentData = await this.fetchAttachment(email.id, attachment.id)
-							if (attachmentData) {
-								console.log(`Downloaded attachment ${attachment.filename}`)
-								const attachmentFileName = this.getUniqFilename(
-									attachment.filename || 'attachment.bin',
-								)
-								const attachmentFilePath = `${this.settings.emailSavePath}/${attachmentFileName}`
-								await this.app.vault.append(noteFile, `- [[${attachmentFileName}]]\n`)
-								await this.app.vault.createBinary(attachmentFilePath, attachmentData)
-							}
-						}
-					}
+					const noteFile = await this.processEmail(email)
+					console.log('Email processed and saved to:', noteFile.path)
 				}
 			})
 
