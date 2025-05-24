@@ -12,7 +12,7 @@ RUN corepack enable
 RUN pnpm config set node-linker hoisted
 
 # Copy dependency files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
 
 # Install dependencies
