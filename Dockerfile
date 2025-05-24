@@ -8,6 +8,7 @@ RUN corepack enable
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmrc ./
+COPY patches ./patches
 
 # Configure pnpm to use hoisted dependencies
 RUN pnpm config set node-linker hoisted
