@@ -18,7 +18,6 @@ interface ServiceConfiguration {
 	}
 	database: {
 		path: string
-		maxConnections: number
 	}
 	security: {
 		rateLimiting: {
@@ -54,7 +53,6 @@ export class ConfigurationManager {
 			},
 			database: {
 				path: process.env.DB_PATH || './emails.db',
-				maxConnections: Number.parseInt(process.env.DB_MAX_CONNECTIONS || '10'),
 			},
 			security: {
 				rateLimiting: {

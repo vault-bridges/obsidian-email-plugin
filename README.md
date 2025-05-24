@@ -1,94 +1,141 @@
-# Obsidian Sample Plugin
+# Obsidian Email Plugin
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+This plugin allows you to receive emails directly in your Obsidian vault. It consists of two parts:
+1. An Obsidian plugin that creates notes from emails
+2. An API service that receives emails via SMTP and makes them available to the plugin
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- Receive emails as Obsidian notes
+- Automatically save email attachments
+- Real-time notifications for new emails
+- Configure where emails are saved in your vault
 
-## First time developing plugins?
+## How to Use the Plugin
 
-Quick starting guide for new plugin devs:
+### Installation
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+## Installation
 
-## Releasing new releases
+> [!NOTE]
+> This plugin is currently in its **alpha** state, and I welcome feedback to enhance its functionality and stability.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+1. Before installing, ensure you have the [BRAT Obsidian plugin](https://tfthacker.com/BRAT) installed and running.
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+2. Then follow [the BRAT instructions](https://tfthacker.com/brat-quick-guide#Adding+a+beta+plugin).
+3. When prompted, use `vault-bridges/obsidian-email-plugin` as the plugin name to add it to your Obsidian setup.
 
-## Adding your plugin to the community plugin list
+### Configuration
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+1. Go to Settings > Community plugins > Email Plugin.
+2. Configure the following settings:
+   - **Service URL**: The URL of your email API service (e.g., `https://your-email-api.example.com`)
+   - **Service API Key**: The authentication key for your email service
+   - **Email Save Path**: The folder path where emails will be saved in your vault (e.g., `emails`)
 
-## How to use
+### Using the Plugin
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+Once configured, the plugin will:
+1. Connect to the email service and listen for new emails
+2. Create a new note for each email received
+3. Save any attachments to the specified folder
+4. Show notifications when new emails arrive
 
-## Manually installing the plugin
+Each email note will contain:
+- The email content (HTML or text)
+- Links to any attachments
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+## Setting Up the API Service
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+The API service is a Node.js application that:
+1. Runs an SMTP server to receive emails
+2. Stores emails in a database
+3. Provides an API for the Obsidian plugin to fetch emails
 
-## Funding URL
+### Prerequisites
 
-You can include funding URLs where people who use your plugin can financially support it.
+- Node.js v16 or higher
+- SSL certificates for secure SMTP (key.pem and cert.pem)
+- A domain name for receiving emails
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+### Installation
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+1. Clone the repository
+2. Provide env variables from the next section
+3. Install dependencies with `npm install`
+
+### Configuration
+
+The API service is configured using environment variables:
+
+#### API Configuration
+- `API_HOST`: Host to bind the API server (default: localhost)
+- `API_PORT`: Port for the API server (default: 80)
+- `API_TOKEN`: Authentication token for API requests
+
+#### SMTP Configuration
+- `SMTP_HOST`: Host to bind the SMTP server (default: localhost)
+- `SMTP_PORT`: Port for the SMTP server (default: 25)
+- `SMTP_SECURE`: Whether to use SSL/TLS (true/false)
+- `SMTP_PROXY`: Whether to use proxy protocol (true/false)
+- `SMTP_KEY`: Path to SSL key file (default: key.pem)
+- `SMTP_CERT`: Path to SSL certificate file (default: cert.pem)
+- `SMTP_DOMAIN`: Domain name for receiving emails (default: localhost)
+
+#### Database Configuration
+- `DB_PATH`: Path to the database file (default: ./emails.db)
+
+### Running the Service
+
+Start the service with:
+
+```bash
+node api/index.ts
 ```
 
-If you have multiple URLs, you can also do:
+For production use, consider using a process manager like PM2:
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+```bash
+npm install -g pm2
+pm2 start api/index.ts --name email-api
 ```
 
-## API Documentation
+## Development
 
-See https://github.com/obsidianmd/obsidian-api
+### Plugin Development
+
+If you want to contribute to the plugin or modify it for your own needs:
+
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Run `npm run dev` to start the compilation in watch mode
+4. Make changes to the TypeScript files
+5. Reload Obsidian to test your changes
+
+For convenience, you can clone the repository directly into your `.obsidian/plugins/obsidian-email-plugin` folder for easier testing.
+
+### API Development
+
+If you want to modify the API service:
+
+1. Navigate to the `api` directory
+2. Make your changes to the TypeScript files
+3. Run `node --experimental-strip-types index.ts`
+4. Restart the service to apply changes
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- The Obsidian team for creating an amazing knowledge management tool
+- All contributors who have helped improve this plugin
+
+## Support
+
+If you need help with the plugin, please open an issue on GitHub or reach out through the Obsidian community forums.
