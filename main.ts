@@ -132,26 +132,30 @@ export default class EmailPlugin extends Plugin {
 	 * @returns The response or null if there was an error
 	 */
 	private async apiRequest(url: URL) {
+		let response
 		try {
-			const response = await fetch(url.toString(), {
+			response = await fetch(url.toString(), {
 				method: 'GET',
 				headers: {
 					Authorization: `Bearer ${this.settings.serviceApiKey}`,
 				},
 			})
-
-			if (!response.ok) {
-				throw new Error(`API request failed: ${response.status} ${response.statusText}`)
-			}
-
-			return response
 		} catch (error) {
-			console.error(`Error in API request to ${url}:`, error)
+			console.error(`Network error in API request to ${url}:`, error)
 			if (error instanceof Error) {
 				new Notice(`API request failed: ${error.message}`)
 			}
 			return null
 		}
+
+		if (!response.ok) {
+			const errorMsg = `API request failed: ${response.status} ${response.statusText}`
+			console.error(errorMsg)
+			new Notice(errorMsg)
+			return null
+		}
+
+		return response
 	}
 
 	/**
@@ -239,7 +243,7 @@ export default class EmailPlugin extends Plugin {
 				console.log('New email notification received:', data)
 				new Notice(`New email received! ID: ${data.emailId}`)
 
-				// Update the timestamp to current time and save settings
+				// Update the timestamp to the current time and save settings
 				this.settings.lastEmailFetchTimestamp = Date.now()
 				await this.saveSettings()
 
