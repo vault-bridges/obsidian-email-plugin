@@ -15,26 +15,26 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@types/mailparser": "^3.4.5",
-		"@types/node": "^22.13.11",
+		"@types/mailparser": "^3.4.6",
+		"@types/node": "^22.15.21",
 		"@types/smtp-server": "^3.5.10",
-		"builtin-modules": "4.0.0",
-		"esbuild": "0.24.2",
+		"builtin-modules": "5.0.0",
+		"esbuild": "0.25.4",
 		"eventsource": "^4.0.0",
 		"obsidian": "latest",
 		"tslib": "^2.8.1",
-		"typescript": "5.8.2",
+		"typescript": "5.8.3",
 		"vitest": "^3.1.4"
 	},
 	"dependencies": {
-		"@hono/node-server": "^1.13.8",
-		"@libsql/client": "^0.15.0",
-		"drizzle-kit": "^0.30.5",
-		"drizzle-orm": "^0.40.1",
-		"es-toolkit": "^1.33.0",
-		"hono": "^4.7.5",
-		"mailauth": "^4.8.2",
-		"mailparser": "^3.7.2",
-		"smtp-server": "^3.13.6"
+		"@hono/node-server": "^1.14.2",
+		"@libsql/client": "^0.15.7",
+		"drizzle-kit": "^0.31.1",
+		"drizzle-orm": "^0.43.1",
+		"es-toolkit": "^1.38.0",
+		"hono": "^4.7.10",
+		"mailauth": "^4.8.5",
+		"mailparser": "^3.7.3",
+		"smtp-server": "^3.13.7"
 	}
 }
