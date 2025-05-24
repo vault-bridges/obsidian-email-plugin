@@ -54,12 +54,23 @@ export default class EmailPlugin extends Plugin {
 		return (await response?.json()) as EmailMessage | null
 	}
 
-	async fetchAttachment(emailId: number, attachmentId: number): Promise<ArrayBuffer | null> {
+	/**
+	 * Fetches an attachment by its ID from a specific email
+	 * @param emailId The ID of the email to fetch the attachment from
+	 * @param attachmentId The ID of the attachment to fetch
+	 * @returns The attachment data as an ArrayBuffer or null if there was an error
+	 */
+	async fetchAttachment(emailId: number, attachmentId: number) {
 		const url = new URL(`/emails/${emailId}/attachments/${attachmentId}`, this.settings.serviceUrl)
 		const response = await this.apiRequest(url)
 		return (await response?.arrayBuffer()) as ArrayBuffer | null
 	}
 
+	/**
+	 * Generates a unique filename to avoid overwriting existing files
+	 * @param filename The original filename
+	 * @returns A unique filename by adding a number in parentheses if needed
+	 */
 	private getUniqFilename(filename: string) {
 		const ext = filename.split('.').pop()
 		const base = filename.split('.').slice(0, -1).join('.')
@@ -74,6 +85,9 @@ export default class EmailPlugin extends Plugin {
 		return `${base} (${duplicateCount}).${ext}`
 	}
 
+	/**
+	 * Ensures that the folder for saving emails exists, creating it if necessary
+	 */
 	private async ensureEmailSavePathExists() {
 		if (!this.app.vault.getFolderByPath(this.settings.emailSavePath)) {
 			await this.app.vault.createFolder(this.settings.emailSavePath)
@@ -140,6 +154,11 @@ export default class EmailPlugin extends Plugin {
 		}
 	}
 
+	/**
+	 * Fetches new emails since the last check and processes them
+	 * Creates notes for each email and handles their attachments
+	 * Updates the lastEmailFetchTimestamp after processing
+	 */
 	private async fetchAndProcessEmails() {
 		// Fetch new emails since last check
 		const params = {
@@ -167,6 +186,11 @@ export default class EmailPlugin extends Plugin {
 		}
 	}
 
+	/**
+	 * Connects to the notification API using EventSource
+	 * Sets up event listeners for real-time email notifications
+	 * Implements automatic reconnection on connection errors
+	 */
 	private connectToNotificationApi() {
 		console.log('Connecting to notification API...')
 		let timeout: ReturnType<typeof setTimeout> | null = null
@@ -278,7 +302,7 @@ class EmailPluginSettingTab extends PluginSettingTab {
 		this.plugin = plugin
 	}
 
-	display(): void {
+	display() {
 		const { containerEl } = this
 
 		containerEl.empty()
