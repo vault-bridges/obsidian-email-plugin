@@ -1,0 +1,16 @@
+diff --git a/index.js b/index.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/package.json b/package.json
+index b06f2f80822cb813c64953c5f646426978654836..f54e0908b9648296ca8c49fc859b09561ce7eab8 100644
+--- a/package.json
++++ b/package.json
+@@ -11,7 +11,7 @@
+         "url": "git+https://github.com/obsidianmd/obsidian-api.git"
+     },
+     "license": "MIT",
+-    "main": "",
++    "main": "index.js",
+     "types": "obsidian.d.ts",
+     "dependencies": {
+         "@types/codemirror": "5.60.8",
