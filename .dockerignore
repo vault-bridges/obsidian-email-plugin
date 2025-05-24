@@ -1,8 +1,8 @@
 /**
 !/.pnpmrc
 !/api
-!/package*.json
-!/pnpm-lock.yaml
-!/pnpm-workspace.yaml
+!/package.json
+!/patches
+!/pnpm*.yaml
 !/tsconfig.json
 !/types.d.ts

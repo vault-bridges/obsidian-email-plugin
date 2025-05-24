@@ -7,7 +7,12 @@ ENV NODE_ENV=production
 RUN corepack enable
 
 # Copy package files
-COPY pnpm-lock.yaml pnpm-workspace.yaml .pnpmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmrc ./
+
+# Configure pnpm to use hoisted dependencies
+RUN pnpm config set node-linker hoisted
+
+# Install dependencies
 RUN pnpm install --prod --frozen-lockfile
 
 COPY . .
