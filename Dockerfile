@@ -13,4 +13,4 @@ EXPOSE 25
 VOLUME /app/certs
 VOLUME /app/db
 
-CMD ["node", "--experimental-strip-types", "./api/email-injest-service.ts"]
+CMD ["node", "--experimental-strip-types", "./api/index.ts"]

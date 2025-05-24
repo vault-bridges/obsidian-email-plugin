@@ -1,5 +1,5 @@
 import { App, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian'
-import { SSE } from 'sse.js'
+import { EventSource } from 'eventsource'
 import type { EmailMessage } from './api/email-database.ts'
 
 interface EmailPluginSettings {
@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS: EmailPluginSettings = {
 
 export default class EmailPlugin extends Plugin {
 	settings!: EmailPluginSettings
-	private eventSource: SSE | null = null
+	private eventSource: EventSource | null = null
 
 	override async onload() {
 		await this.loadSettings()
@@ -157,6 +157,8 @@ export default class EmailPlugin extends Plugin {
 			// Process each email
 			for (const email of emails) {
 				await this.processEmail(email)
+
+				new Notice(`New email received! ID: ${email.id} Subject: ${email.subject}`)
 			}
 
 			// Update the timestamp to the current time and save settings
@@ -166,6 +168,7 @@ export default class EmailPlugin extends Plugin {
 	}
 
 	private connectToNotificationApi() {
+		console.log('Connecting to notification API...')
 		let timeout: ReturnType<typeof setTimeout> | null = null
 		try {
 			if (this.eventSource) {
@@ -177,12 +180,17 @@ export default class EmailPlugin extends Plugin {
 			// This custom implementation supports authorization headers
 			const url = new URL('/notify', this.settings.serviceUrl).toString()
 
-			this.eventSource = new SSE(url, {
-				headers: {
-					Authorization: `Bearer ${this.settings.serviceApiKey}`,
-					Accept: 'text/event-stream',
-					'Cache-Control': 'no-cache',
-				},
+			this.eventSource = new EventSource(url, {
+				fetch: (input, init) =>
+					fetch(input, {
+						...init,
+						headers: {
+							...init.headers,
+							Authorization: `Bearer ${this.settings.serviceApiKey}`,
+							Accept: 'text/event-stream',
+							'Cache-Control': 'no-cache',
+						},
+					}),
 			})
 
 			// Handle connection established
@@ -218,6 +226,15 @@ export default class EmailPlugin extends Plugin {
 					const noteFile = await this.processEmail(email)
 					console.log('Email processed and saved to:', noteFile.path)
 				}
+			})
+
+			this.eventSource.addEventListener('error', (event: MessageEvent) => {
+				console.log('Notification API connection error:', event.data)
+				new Notice('Failed to connect to email notification service')
+			})
+
+			this.eventSource.addEventListener('abort', (event: MessageEvent) => {
+				console.log('Notification API connection aborted:', event.data)
 			})
 
 			// Handle errors
