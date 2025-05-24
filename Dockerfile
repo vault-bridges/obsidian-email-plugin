@@ -1,26 +1,32 @@
+# Base image
 FROM node:22.16.0-slim
 
+# Set working directory
 WORKDIR /app
+
+# Set environment variables
 ENV NODE_ENV=production
 
-# Install pnpm
+# Setup pnpm
 RUN corepack enable
+RUN pnpm config set node-linker hoisted
 
-# Copy package files
+# Copy dependency files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmrc ./
 COPY patches ./patches
-
-# Configure pnpm to use hoisted dependencies
-RUN pnpm config set node-linker hoisted
 
 # Install dependencies
 RUN pnpm install --prod --frozen-lockfile
 
+# Copy application code
 COPY . .
 
+# Configure networking
 EXPOSE 25
 
-VOLUME /app/certs
-VOLUME /app/db
+# Define persistent storage
+VOLUME ["/app/certs", "/app/db"]
 
-CMD ["node", "--experimental-strip-types", "./api/index.ts"]
+# Set entrypoint and command
+ENTRYPOINT ["node", "--experimental-strip-types"]
+CMD ["./api/index.ts"]
