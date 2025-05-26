@@ -1,6 +1,6 @@
 import { serve } from '@hono/node-server'
 import { readFileSync } from 'node:fs'
-import { PassThrough } from 'node:stream'
+import { Buffer } from 'node:buffer'
 import { authenticate } from 'mailauth'
 import { simpleParser } from 'mailparser'
 import { SMTPServer, type SMTPServerDataStream, type SMTPServerSession } from 'smtp-server'
@@ -68,16 +68,12 @@ export class EmailIngestService {
 		const domainError = await this.checkDomain(session)
 		if (domainError) return callback(domainError)
 
-		const passStreamParser = new PassThrough()
-		const passStreamAuth = new PassThrough()
+		const buffer = Buffer.concat(await Array.fromAsync(stream))
 
-		stream.pipe(passStreamParser)
-		stream.pipe(passStreamAuth)
-
-		const authError = await this.authenticateEmail(passStreamAuth, session)
+		const authError = await this.authenticateEmail(buffer, session)
 		if (authError) return callback(authError)
 
-		const parsed = await this.parseEmail(passStreamParser)
+		const parsed = await this.parseEmail(buffer)
 		if (parsed instanceof Error) return callback(parsed)
 
 		const emailId = await this.database.saveEmail(parsed)
@@ -106,7 +102,7 @@ export class EmailIngestService {
 		}
 	}
 
-	private async authenticateEmail(stream: PassThrough, session: SMTPServerSession) {
+	private async authenticateEmail(buffer: Buffer, session: SMTPServerSession) {
 		console.log('session', JSON.stringify(session, null, 2))
 		if (!session.envelope.mailFrom) {
 			return this.logAndReturnError('No sender address found in envelope')
@@ -118,7 +114,7 @@ export class EmailIngestService {
 			return
 		}
 
-		const { spf, dkim, dmarc } = await authenticate(stream, {
+		const { spf, dkim, dmarc } = await authenticate(buffer, {
 			ip: session.remoteAddress,
 			helo: session.clientHostname,
 			sender: session.envelope.mailFrom.address,
@@ -138,9 +134,9 @@ export class EmailIngestService {
 		}
 	}
 
-	private async parseEmail(stream: PassThrough) {
+	private async parseEmail(buffer: Buffer) {
 		try {
-			return await simpleParser(stream, {})
+			return await simpleParser(buffer, {})
 		} catch (error) {
 			if (error instanceof Error) {
 				console.error(`Failed to parse email, ${error.message}, ${error.stack}`)

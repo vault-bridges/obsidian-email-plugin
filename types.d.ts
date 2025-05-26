@@ -1,6 +1,6 @@
 declare module 'mailauth' {
 	function authenticate(
-		input: string | NodeJS.ReadableStream,
+		input: string | Buffer,
 		options: Options,
 	): Promise<EmailAuthenticationResult>
 
