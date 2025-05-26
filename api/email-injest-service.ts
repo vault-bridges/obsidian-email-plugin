@@ -40,14 +40,16 @@ export class EmailIngestService {
 	}
 
 	private initializeServices() {
+		const key = this.configManager.get('smtp.key')
+		const cert = this.configManager.get('smtp.cert')
 		// Initialize SMTP server
 		this.smtpServer = new SMTPServer({
 			logger: true,
 			authOptional: true,
 			useProxy: this.configManager.get('smtp.proxy'),
 			secure: this.configManager.get('smtp.secure'),
-			key: readFileSync(this.configManager.get('smtp.key')),
-			cert: readFileSync(this.configManager.get('smtp.cert')),
+			key: key ? readFileSync(key) : undefined,
+			cert: cert ? readFileSync(cert) : undefined,
 			onData: this.processIncomingEmail.bind(this),
 		})
 		this.smtpServer.on('error', (error) => {
