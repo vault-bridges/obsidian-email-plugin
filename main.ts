@@ -19,6 +19,7 @@ const DEFAULT_SETTINGS: EmailPluginSettings = {
 export default class EmailPlugin extends Plugin {
 	settings!: EmailPluginSettings
 	private eventSource: EventSource | null = null
+	private timeout: ReturnType<typeof setTimeout> | null = null
 
 	override async onload() {
 		await this.loadSettings()
@@ -40,6 +41,10 @@ export default class EmailPlugin extends Plugin {
 		if (this.eventSource) {
 			this.eventSource.close()
 			this.eventSource = null
+		}
+		if (this.timeout) {
+			clearTimeout(this.timeout)
+			this.timeout = null
 		}
 	}
 
@@ -197,7 +202,6 @@ export default class EmailPlugin extends Plugin {
 	 */
 	private connectToNotificationApi() {
 		console.log('Connecting to notification API...')
-		let timeout: ReturnType<typeof setTimeout> | null = null
 		try {
 			if (this.eventSource) {
 				this.eventSource.close()
@@ -225,15 +229,15 @@ export default class EmailPlugin extends Plugin {
 			this.eventSource.addEventListener('connected', (event: MessageEvent) => {
 				console.log('Connected to notification API:', event.data)
 				new Notice('Connected to email notification service')
-				timeout = setTimeout(this.connectToNotificationApi.bind(this), 60000)
+				this.timeout = setTimeout(this.connectToNotificationApi.bind(this), 60000)
 			})
 
 			// Handle heartbeat to keep connection alive
 			this.eventSource.addEventListener('heartbeat', (event: MessageEvent) => {
 				console.log('Notification heartbeat:', event.data)
-				if (timeout) {
-					clearTimeout(timeout)
-					timeout = setTimeout(this.connectToNotificationApi.bind(this), 60000)
+				if (this.timeout) {
+					clearTimeout(this.timeout)
+					this.timeout = setTimeout(this.connectToNotificationApi.bind(this), 60000)
 				}
 			})
 
