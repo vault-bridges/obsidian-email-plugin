@@ -38,14 +38,7 @@ export default class EmailPlugin extends Plugin {
 
 	override onunload() {
 		// Close the notification connection if it exists
-		if (this.eventSource) {
-			this.eventSource.close()
-			this.eventSource = null
-		}
-		if (this.timeout) {
-			clearTimeout(this.timeout)
-			this.timeout = null
-		}
+		this.clearNotificationApiConnection()
 	}
 
 	/**
@@ -202,12 +195,8 @@ export default class EmailPlugin extends Plugin {
 	 */
 	private connectToNotificationApi() {
 		console.log('Connecting to notification API...')
+		this.clearNotificationApiConnection()
 		try {
-			if (this.eventSource) {
-				this.eventSource.close()
-				this.eventSource = null
-			}
-
 			// Create a new EventSource connection to the /notify endpoint
 			// This custom implementation supports authorization headers
 			const url = new URL('/notify', this.settings.serviceUrl).toString()
@@ -275,21 +264,25 @@ export default class EmailPlugin extends Plugin {
 				new Notice('Failed to connect to email notification service')
 
 				// Close and reset the connection on error
-				if (this.eventSource) {
-					this.eventSource.close()
-					this.eventSource = null
-				}
+				this.clearNotificationApiConnection()
 
 				// Try to reconnect after a delay
-				setTimeout(() => {
-					if (!this.eventSource) {
-						this.connectToNotificationApi()
-					}
-				}, 10000) // Retry after 10 seconds
+				setTimeout(this.connectToNotificationApi.bind(this), 10000) // Retry after 10 seconds
 			}
 		} catch (error) {
 			console.error('Failed to connect to notification API:', error)
 			new Notice('Failed to connect to email notification service')
+		}
+	}
+
+	private clearNotificationApiConnection() {
+		if (this.eventSource) {
+			this.eventSource.close()
+			this.eventSource = null
+		}
+		if (this.timeout) {
+			clearTimeout(this.timeout)
+			this.timeout = null
 		}
 	}
 
