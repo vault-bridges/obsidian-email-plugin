@@ -217,7 +217,6 @@ export default class EmailPlugin extends Plugin {
 			// Handle connection established
 			this.eventSource.addEventListener('connected', (event: MessageEvent) => {
 				console.log('Connected to notification API:', event.data)
-				new Notice('Connected to email notification service')
 				this.timeout = setTimeout(this.connectToNotificationApi.bind(this), 60000)
 			})
 
@@ -250,7 +249,7 @@ export default class EmailPlugin extends Plugin {
 			})
 
 			this.eventSource.addEventListener('error', (event: MessageEvent) => {
-				console.log('Notification API connection error:', event.data)
+				console.log('Notification API connection error event:', event.data)
 				new Notice('Failed to connect to email notification service')
 			})
 
