@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-email-plugin",
 	"name": "Email Plugin",
-	"version": "0.0.1",
+	"version": "0.0.3",
 	"minAppVersion": "0.15.0",
 	"description": "Receive emails as Obsidian notes.",
 	"author": "sairus2k",

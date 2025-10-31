@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-email-plugin",
-	"version": "0.0.1",
+	"version": "0.0.3",
 	"description": "Receive emails as Obsidian notes",
 	"main": "main.js",
 	"type": "module",
